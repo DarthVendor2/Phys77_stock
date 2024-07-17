@@ -1,5 +1,4 @@
 import yfinance as yf
-import pandas as pd
 import os
 
 # Define the tickers and their corresponding filenames
@@ -12,7 +11,7 @@ Start_date= "2020-01-01"
 End_date= "2023-12-31"
 
 # Define the relative folder path
-folder_path = "Stock_data/Raw_data"
+folder_path = "Raw_data"
 
 # Ensure the folder exists, and if not, create it
 os.makedirs(folder_path, exist_ok=True)
