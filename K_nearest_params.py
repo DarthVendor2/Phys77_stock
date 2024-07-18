@@ -5,7 +5,7 @@ import math
 from sklearn.neighbors import NearestNeighbors
 
 # Define the data_file class
-class data_file():
+class Spline_function():
     
     def __init__(self, file, k=5, taylor_degree=3):
         # Ensure the file exists
@@ -18,16 +18,17 @@ class data_file():
 
         # Store k value and Taylor degree
         self.k = k
-        self.taylor_degree = taylor_degree
+        self.taylor_degree = taylor_degree + 1 
 
         # Initialize k-NN and nodes
         self.nodes = []
         self.init_k_nearest()
     
+
     def init_k_nearest(self):
         # Select the first 'taylor_degree' columns as features (X_data)
         X_data = self.df.iloc[:, :self.taylor_degree].values
-        
+
         # Create instance knn, which is the model
         self.knn = NearestNeighbors(n_neighbors=self.k)
         self.knn.fit(X_data)
@@ -68,15 +69,21 @@ class data_file():
             # Initialize taylor_params
             self.taylor_params = None
         
+
         def calculate_output_params(self, rows):
-            # Compute mean across collumns (axis=0) to get average values
-            avg = np.mean(rows, axis=0)
+            # Compute mean across columns (axis=0) to get average values for rest of values
+            N= len(self.input_params[0])
+            avg = np.array(np.mean(rows, axis=0))[N:]
+            
+            # Ensure input_params is a 2D array
+            input_params_2d = self.input_params[0]
+
+            # Concatenate input_params and avg horizontally
+            self.output_params = np.hstack((input_params_2d, avg))
             
             # Compute Taylor series parameters using the averages
-            self.taylor_params = [v / math.factorial(i) for i, v in enumerate(avg)]
-            
-            # Store output_params as a NumPy array
-            self.output_params = np.array(avg)
+            self.taylor_params = np.array([v / math.factorial(i) for i, v in enumerate(self.output_params)])
+
         
         def get_taylor_params(self):
             return self.taylor_params
@@ -86,14 +93,16 @@ class data_file():
 
 # Example usage
 data_file_path = "Stock_data/Processed_data/dowjones_data.csv"
-temp = data_file(data_file_path)
+temp = Spline_function(data_file_path)
 
 # Example usage of finding k nearest neighbors
-params = [28901.80078125, 6.30078125, 32.791015625]  # Example parameters
+params = [29111.01953125,-152.611328125,-158.03125,-202.291015625]  # Example parameters
 node = temp.find_k_nearest(params)
 
 # Accessing results
 print("Distances to nearest neighbors:", node.distances)
 print("Indices of nearest neighbors:", node.indices)
 print("Taylor series parameters:", node.get_taylor_params())
+print("Taylor series parameters:", len(node.get_taylor_params()))
 print("Output parameters:", node.get_output_params())
+print("Output parameters:", len(node.get_output_params()))
