@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import os
 
+
 class data_handler:
     def __init__(self):
         # Sets folder paths
