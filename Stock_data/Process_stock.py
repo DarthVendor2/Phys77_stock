@@ -4,8 +4,8 @@ import os
 Degree_of_taylor = 10
 
 # Specify the path to the folder
-folder_path = "Raw_data"
-processed_folder_path = "Processed_data"
+folder_path = "Stock_data/Raw_data"
+processed_folder_path = "Stock_data/Processed_data"
 
 # Ensure the folders exist
 os.makedirs(folder_path, exist_ok=True)
