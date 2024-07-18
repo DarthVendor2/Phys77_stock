@@ -7,7 +7,7 @@ tickers = {
     "^DJI": "dowjones_data.csv",   # Dow Jones
     "^W5000": "wilshire5000_data.csv"  # Wilshire 5000
 }
-Start_date= "2020-01-01"
+Start_date= "2010-01-01"
 End_date= "2023-12-31"
 
 # Define the relative folder path
