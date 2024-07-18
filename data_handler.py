@@ -31,6 +31,7 @@ class data_handler:
         print(f"Data for {ticker_label} has been saved to {file_path}")
 
     def process_tickers(self, Degree_of_taylor):
+        Degree_of_taylor+= 1
         files = os.listdir(self.raw_data_folder_path)
         for file in files:
             file_path = os.path.join(self.raw_data_folder_path, file)
