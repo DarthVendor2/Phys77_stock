@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 class Spline_functions():
     
-    def __init__(self, file, ticker_name, X, interval_length=3, k=5, taylor_degree=3):
+    def __init__(self, file, ticker_name, interval_length=3, k=5, taylor_degree=3):
         # Ensure the file exists
         if not os.path.isfile(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
@@ -18,8 +18,8 @@ class Spline_functions():
 
         # Store k value and Taylor degree
         self.ticker_name = ticker_name
-        self.X = X *interval_length
-        self.dx = (X[1] - X[0]) * interval_length
+        self.X = np.linspace(0, 1, 100) *interval_length
+        self.dx = (self.X[1] - self.X[0]) * interval_length
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
@@ -28,6 +28,7 @@ class Spline_functions():
         self.last_node_num = 0
         self.nodes = []
         self.init_k_nearest()
+
     
 
     def init_k_nearest(self):
@@ -70,7 +71,7 @@ class Spline_functions():
         # Create a figure and axes
         fig, ax = plt.subplots(figsize=(10, 10))
         for node in self.get_nodes():
-            X=self.X + node.node_num * Interval_length
+            X=self.X + node.node_num * self.interval_length
             node.graph_function(ax, X, self.dx)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -153,23 +154,3 @@ class Spline_functions():
             print("Nth derivatives at endpoint:", self.fnth)
 
 
-# Example usage
-ticker_name = "SMP500"
-data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-num_of_nodes = 10
-Interval_length = 1
-X = np.linspace(0, 1, 100)
-
-Functions = Spline_functions(
-    data_file_path, 
-    ticker_name,
-    X,
-    interval_length=Interval_length,
-    taylor_degree=1
-)
-
-# Example usage of finding k nearest neighbors
-init_params = [1116.56005859375, 16.0999755859375]  # Example parameters
-nodes = Functions.Create_node(init_params, size=num_of_nodes)
-Functions.graph_functions()
-Functions.Nodes_info(all=True)

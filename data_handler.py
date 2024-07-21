@@ -59,15 +59,3 @@ class data_handler:
     
             print(f"Data has been processed and saved for {file}")
 
-# Create an instance of data_handler
-temp = data_handler()
-
-# List of tickers to add and process
-tickers = ["^GSPC", "^DJI", "^W5000"]
-
-# Add each ticker and process them
-for ticker in tickers:
-    temp.add_ticker(ticker)
-
-# Process the tickers with a degree of Taylor of 9
-temp.process_tickers(5)
