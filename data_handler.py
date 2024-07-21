@@ -11,7 +11,7 @@ class data_handler:
         os.makedirs(self.raw_data_folder_path, exist_ok=True)
         os.makedirs(self.processed_data_folder_path, exist_ok=True)
 
-    def add_ticker(self, ticker_label, start_date="2010-01-01", end_date="2023-12-31"):
+    def add_ticker(self, ticker_label, start_date="2000-01-01", end_date="2023-12-31"):
         # Get company name from ticker
         ticker = yf.Ticker(ticker_label)
         company_name = ticker.info['longName']
@@ -31,7 +31,7 @@ class data_handler:
         
         print(f"Data for {ticker_label} has been saved to {file_path}")
 
-    def process_tickers(self, Degree_of_taylor):
+    def process_tickers(self, Degree_of_taylor, rolling=30):
         Degree_of_taylor+= 1
         files = os.listdir(self.raw_data_folder_path)
         for file in files:
@@ -49,7 +49,7 @@ class data_handler:
 
             # Calculate N number of derivatives
             for i in range(Degree_of_taylor):
-                df['Derivative_' + str(i + 1)] = df['Derivative_0'].diff(i + 1)
+                df['Derivative_' + str(i + 1)] = -df[f'Derivative_{i}'].diff(-1).rolling(rolling).mean()
             
             # Drop rows with NaN values (incomplete rows due to differencing)
             df.dropna(inplace=True)
@@ -70,4 +70,4 @@ for ticker in tickers:
     temp.add_ticker(ticker)
 
 # Process the tickers with a degree of Taylor of 9
-temp.process_tickers(9)
+temp.process_tickers(5)

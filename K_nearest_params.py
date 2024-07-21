@@ -4,11 +4,10 @@ import pandas as pd
 import math
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
-from scipy.misc import derivative
 
 class Spline_functions():
     
-    def __init__(self, file, k=5, taylor_degree=3):
+    def __init__(self, file, ticker_name, X, interval_length=3, k=5, taylor_degree=3):
         # Ensure the file exists
         if not os.path.isfile(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
@@ -18,10 +17,15 @@ class Spline_functions():
         self.df = pd.read_csv(file)
 
         # Store k value and Taylor degree
+        self.ticker_name = ticker_name
+        self.X = X *interval_length
+        self.dx = (X[1] - X[0]) * interval_length
+        self.interval_length = interval_length
         self.k = k
-        self.taylor_degree = taylor_degree + 1 
+        self.taylor_degree = taylor_degree + 1
 
         # Initialize k-NN and nodes
+        self.last_node_num = 0
         self.nodes = []
         self.init_k_nearest()
     
@@ -34,34 +38,60 @@ class Spline_functions():
         self.knn = NearestNeighbors(n_neighbors=self.k)
         self.knn.fit(X_data)
 
-    def find_k_nearest(self, params):
-
+    def Create_node(self, params, size=1):
         if len(params) != self.taylor_degree:
             raise ValueError(f"Number of parameters must be {self.taylor_degree}")
+        
+        nodes_created = []
+        for i in range(size):
+            # Create Spline_node instance for specific params
+            node = self.Spline_function(self.knn, params, self.last_node_num)
+            self.last_node_num += 1
 
-        # Create Spline_node instance for specific params
-        node = self.Spline_node(self.knn, params)
+            # Store the results
+            self.nodes.append(node)
+            nodes_created.append(node)
 
-        # Store the results
-        self.nodes.append(node)
+            # Retrieve rows corresponding to k-nearest neighbors 
+            rows = self.df.iloc[node.indices.flatten()] 
 
-        # Retrieve rows corresponding to k-nearest neighbors 
-        rows = self.df.iloc[node.indices.flatten()] 
+            # Calculate output parameters for the node
+            node.calculate_output_params(rows)
 
-        # Calculate output parameters for the node
-        node.calculate_output_params(rows)
+            _, params = node.taylor_function(self.X, self.dx, set_Y=True)
 
         # Return the node
-        return node
-
+        return nodes_created
 
     def get_nodes(self):
         return np.array(self.nodes)
+    
+    def graph_functions(self):
+        # Create a figure and axes
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for node in self.get_nodes():
+            X=self.X + node.node_num * Interval_length
+            node.graph_function(ax, X, self.dx)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_title('Taylor Series Approximation')
+        ax.grid(True)
+        ax.legend()
+        plt.show()
+
+    def Nodes_info(self, Node_num=0, all=False):
+        nodes = self.get_nodes()
+        if all:
+            for node in nodes:
+                node.print_node()
+        else:
+            nodes[Node_num - 1].print_node()
 
     class Spline_function():
-        def __init__(self, knn, input_params):
+        def __init__(self, knn, input_params, node_num):
+            self.node_num = node_num
             # Reshape input_params to ensure it's a 2D array with the correct shape
-            self.N=len(input_params)
+            self.N = len(input_params)
             self.input_params = np.array(input_params).reshape(1, -1)
 
             # Compute k-nearest neighbors
@@ -81,46 +111,65 @@ class Spline_functions():
             # Compute Taylor series parameters using the averages
             self.taylor_params = np.array([v / math.factorial(i) for i, v in enumerate(self.output_params)])
 
-        def taylor_function(self, X):
+        def taylor_function(self, X, dx, set_Y=False):
             Y = np.zeros_like(X)
             for i, v in enumerate(self.taylor_params):
                 Y += v * X**i
-            self.Y= Y
-            return Y
+            
+            if set_Y:
+                self.Y = Y
+            
+            return Y, self.nth_derivative_endpoint(dx)
         
-        #Needs to compute backwards derivatives at the endpoint
-        def taylor_nth_derivative_endpoint(self):
+        def nth_derivative_endpoint(self, dx):
+
+            f = pd.Series(self.Y[-self.N:])
+            f_nth = []
+
             for i in range(self.N):
-                pass
+                f_nth.append(f.iloc[-1])
+                f = f.diff() / dx
+            
+            self.fnth = np.array(f_nth)
 
-
-
+            return np.array(f_nth)
+        
+        def graph_function(self, ax, X, dx):
+            Y, _ = self.taylor_function(X, dx)
+            ax.plot(X, Y, label=f'Function {self.node_num}')
+        
         def get_taylor_params(self):
             return self.taylor_params
         
         def get_output_params(self):
             return self.output_params
+        
+        def print_node(self):
+            print(f'Node {self.node_num}')
+            print("Distances to nearest neighbors:", self.distances)
+            print("Indices of nearest neighbors:", self.indices)
+            print("Taylor series parameters:", self.get_taylor_params())
+            print("Output parameters:", self.get_output_params())
+            print("Nth derivatives at endpoint:", self.fnth)
+
 
 # Example usage
-data_file_path = "Stock_data/Processed_data/Dow Jones Industrial Average_data.csv"
-temp = Spline_functions(data_file_path, taylor_degree= 4)
+ticker_name = "SMP500"
+data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
+num_of_nodes = 10
+Interval_length = 1
+X = np.linspace(0, 1, 100)
+
+Functions = Spline_functions(
+    data_file_path, 
+    ticker_name,
+    X,
+    interval_length=Interval_length,
+    taylor_degree=1
+)
 
 # Example usage of finding k nearest neighbors
-params = [1079.1300048828125,3.1800537109375,12.030029296875,9.449951171875,19.0699462890625]  # Example parameters
-node = temp.find_k_nearest(params)
-
-# Accessing results
-print("Distances to nearest neighbors:", node.distances)
-print("Indices of nearest neighbors:", node.indices)
-print("Taylor series parameters:", node.get_taylor_params())
-print("Output parameters:", node.get_output_params())
-
-# Plotting Taylor series function
-X = np.linspace(0, 1, 100)
-Y = node.taylor_function(X)
-plt.plot(X, Y)
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Taylor Series Approximation')
-plt.grid(True)
-plt.show()
+init_params = [1116.56005859375, 16.0999755859375]  # Example parameters
+nodes = Functions.Create_node(init_params, size=num_of_nodes)
+Functions.graph_functions()
+Functions.Nodes_info(all=True)

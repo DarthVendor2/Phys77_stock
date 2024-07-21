@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-file = "Stock_data/Raw_data/dowjones_data.csv"
+file = "Stock_data/Raw_data/Dow Jones Industrial Average_data.csv"
 df = pd.read_csv(file)
 
 # Print columns of the DataFrame
