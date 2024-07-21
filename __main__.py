@@ -4,16 +4,19 @@ import numpy as np
 
 # Data Variables
 tickers = ["^GSPC", "^DJI", "^W5000"]
-Reset_data = True
+Reset_data = False
 Full_taylor_degree = 9
 
 # Model Variables
 ticker_name = "SMP500"
 data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
 Approximation_degree = 3
-init_params = [1448.719970703125,-1.09366455078125,-0.11256686740451387,-0.0009277795862268512]  # length must be one more than the approximation degree
-num_of_nodes = 100
-Interval_length = 3
+init_params = [1448.719970703125,1.09366455078125,-0.11256686740451387,0.0009277795862268512]  # length must be one more than the approximation degree
+num_of_nodes = 20
+Interval_length = 5
+
+#Print node info?
+Node_info= False
 
 # Actual function
 if __name__ == "__main__":
@@ -41,6 +44,7 @@ if __name__ == "__main__":
     Functions.graph_functions()
     
     # Print information about nodes
-    Functions.Nodes_info(all=True)
+    if Node_info:
+        Functions.Nodes_info(all=True)
 
     print('fin')

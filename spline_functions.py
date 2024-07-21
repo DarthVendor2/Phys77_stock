@@ -18,8 +18,8 @@ class Spline_functions():
 
         # Store k value and Taylor degree
         self.ticker_name = ticker_name
-        self.X = np.linspace(0, 1, 100) *interval_length
-        self.dx = (self.X[1] - self.X[0]) * interval_length
+        self.X = np.linspace(0, interval_length, 200)
+        self.dx = self.X[1] - self.X[0]
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
@@ -70,9 +70,10 @@ class Spline_functions():
     def graph_functions(self):
         # Create a figure and axes
         fig, ax = plt.subplots(figsize=(10, 10))
+        X= self.X
         for node in self.get_nodes():
-            X=self.X + node.node_num * self.interval_length
-            node.graph_function(ax, X, self.dx)
+            node.graph_function(ax, self.X)
+            X+= self.interval_length
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_title('Taylor Series Approximation')
@@ -114,6 +115,7 @@ class Spline_functions():
 
         def taylor_function(self, X, dx, set_Y=False):
             Y = np.zeros_like(X)
+
             for i, v in enumerate(self.taylor_params):
                 Y += v * X**i
             
@@ -135,9 +137,8 @@ class Spline_functions():
 
             return np.array(f_nth)
         
-        def graph_function(self, ax, X, dx):
-            Y, _ = self.taylor_function(X, dx)
-            ax.plot(X, Y, label=f'Function {self.node_num}')
+        def graph_function(self, ax, X):
+            ax.plot(X, self.Y, label=f'Function {self.node_num}')
         
         def get_taylor_params(self):
             return self.taylor_params
