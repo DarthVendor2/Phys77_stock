@@ -99,9 +99,8 @@ class Spline_functions():
             # Compute k-nearest neighbors
             self.distances, self.indices = knn.kneighbors(self.input_params)
 
-            # Initialize output_params and taylor_params
+            # Initialize output_params
             self.output_params = None
-            self.taylor_params = None
         
         def calculate_output_params(self, rows):
             # Compute mean across columns (axis=0) to get average values for rest of values
@@ -110,13 +109,11 @@ class Spline_functions():
             # Concatenate input_params and avg horizontally
             self.output_params = np.hstack((self.input_params.flatten(), avg))
             
-            # Compute Taylor series parameters using the averages
-            self.taylor_params = np.array([v / math.factorial(i) for i, v in enumerate(self.output_params)])
 
         def taylor_function(self, X, dx, set_Y=False):
             Y = np.zeros_like(X)
 
-            for i, v in enumerate(self.taylor_params):
+            for i, v in enumerate(self.output_params):
                 Y += v * X**i
             
             if set_Y:
@@ -131,7 +128,7 @@ class Spline_functions():
 
             for i in range(self.N):
                 f_nth.append(f.iloc[-1])
-                f = f.diff() / dx
+                f = f.diff()
             
             self.fnth = np.array(f_nth)
 
@@ -140,8 +137,6 @@ class Spline_functions():
         def graph_function(self, ax, X):
             ax.plot(X, self.Y, label=f'Function {self.node_num}')
         
-        def get_taylor_params(self):
-            return self.taylor_params
         
         def get_output_params(self):
             return self.output_params
@@ -150,7 +145,6 @@ class Spline_functions():
             print(f'Node {self.node_num}')
             print("Distances to nearest neighbors:", self.distances)
             print("Indices of nearest neighbors:", self.indices)
-            print("Taylor series parameters:", self.get_taylor_params())
             print("Output parameters:", self.get_output_params())
             print("Nth derivatives at endpoint:", self.fnth)
 

@@ -1,19 +1,18 @@
 import spline_functions
 import data_handler
-import numpy as np
 
 # Data Variables
 tickers = ["^GSPC", "^DJI", "^W5000"]
 Reset_data = False
-Full_taylor_degree = 9
+Full_taylor_degree = 10
 
 # Model Variables
 ticker_name = "SMP500"
 data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-Approximation_degree = 3
-init_params = [1448.719970703125,1.09366455078125,-0.11256686740451387,0.0009277795862268512]  # length must be one more than the approximation degree
-num_of_nodes = 20
-Interval_length = 5
+Approximation_degree = 4
+init_params = [1440.2223347981771,-0.3334441460503513,-0.31889987521700885,0.05700005425346717,0.011977403428826012]  # length must be one more than the approximation degree
+num_of_nodes = 365*3 #3yr
+Interval_length = 1
 
 #Print node info?
 Node_info= False
@@ -48,3 +47,4 @@ if __name__ == "__main__":
         Functions.Nodes_info(all=True)
 
     print('fin')
+    print(f'Total length= {num_of_nodes*Interval_length} days')

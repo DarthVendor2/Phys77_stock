@@ -32,30 +32,33 @@ class data_handler:
         print(f"Data for {ticker_label} has been saved to {file_path}")
 
     def process_tickers(self, Degree_of_taylor, rolling=30):
-        Degree_of_taylor+= 1
+        Degree_of_taylor += 1
         files = os.listdir(self.raw_data_folder_path)
         for file in files:
             file_path = os.path.join(self.raw_data_folder_path, file)
             processed_file_path = os.path.join(self.processed_data_folder_path, file)
             
-            # Remove the original file if needed
+            # Remove existing processed file if needed
             if os.path.exists(processed_file_path):
                 print(f'Removing {processed_file_path}')
                 os.remove(processed_file_path)
             
-            # Only take the opening value for each day
+            # Load data and compute rolling mean for the 'Open' column
             df = pd.read_csv(file_path)[['Open']]
             df.rename(columns={'Open': 'Derivative_0'}, inplace=True)
+            df['Derivative_0'] = df['Derivative_0'].rolling(rolling).mean()
 
-            # Calculate N number of derivatives
+            # Calculate derivatives and apply rolling mean
             for i in range(Degree_of_taylor):
-                df['Derivative_' + str(i + 1)] = -df[f'Derivative_{i}'].diff(-1).rolling(rolling).mean()
+                df[f'Derivative_{i + 1}'] = -df[f'Derivative_{i}'].diff(-1)
             
-            # Drop rows with NaN values (incomplete rows due to differencing)
+            # Apply rolling mean to all derivative columns
+            for col in df.columns[1:]:
+                df[col] = df[col].rolling(rolling).mean()
+            
+            # Drop rows with NaN values
             df.dropna(inplace=True)
 
-            # Save the data to the specified CSV file in the processed folder
+            # Save the processed data
             df.to_csv(processed_file_path, index=False)
-    
             print(f"Data has been processed and saved for {file}")
-
