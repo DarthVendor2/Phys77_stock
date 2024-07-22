@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 
-class data_handler:
+class Data_handler:
     def __init__(self):
         # Sets folder paths
         self.raw_data_folder_path = "Stock_data/Raw_data"

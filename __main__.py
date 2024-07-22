@@ -12,7 +12,7 @@ data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
 Approximation_degree = 4
 init_params = [1440.2223347981771,-0.3334441460503513,-0.31889987521700885,0.05700005425346717,0.011977403428826012]  # length must be one more than the approximation degree
 num_of_nodes = 365*3 #3yr
-Interval_length = 1
+Interval_length = 1 #days
 
 #Print node info?
 Node_info= False
@@ -22,13 +22,13 @@ if __name__ == "__main__":
     
     if Reset_data:
         # Create an instance of data_handler
-        temp = data_handler.data_handler()
+        temp = data_handler.Data_handler()
         # List of tickers to add and process
         for ticker in tickers:
             temp.add_ticker(ticker)
         temp.process_tickers(Full_taylor_degree)
     
-    # Create an instance of Spline_functions
+    # Initiates spline function
     Functions = spline_functions.Spline_functions(
         data_file_path, 
         ticker_name,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     )
 
     # Create nodes
-    nodes = Functions.Create_node(init_params, size=num_of_nodes)
+    nodes = Functions.Create_node(init_params, size= num_of_nodes)
     
     # Graph the functions
     Functions.graph_functions()
@@ -46,5 +46,5 @@ if __name__ == "__main__":
     if Node_info:
         Functions.Nodes_info(all=True)
 
+    print(f'Total length= {num_of_nodes*Interval_length/365} years')
     print('fin')
-    print(f'Total length= {num_of_nodes*Interval_length} days')
