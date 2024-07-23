@@ -18,7 +18,6 @@ class Spline_functions():
         # Store k value and Taylor degree
         self.ticker_name = ticker_name
         self.X = np.linspace(0, interval_length, 200)
-        self.dx = self.X[1] - self.X[0]
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
@@ -58,37 +57,56 @@ class Spline_functions():
             # Calculate output parameters for the node
             node.calculate_output_params(rows)
 
-            _, params = node.taylor_function(self.X, self.dx, set_Y=True)
+            _, params = node.taylor_function(self.X, set_Y=True)
 
-        # Return the node
-        return nodes_created
+        # Return the nodes and last params outputed just in case
+        return nodes_created, params
 
+    #Returns array of all the nodes
     def get_nodes(self):
         return np.array(self.nodes)
     
-    def graph_functions(self):
+    #Just plots all functions
+    def graph_functions(self, show_legend= False,start= 0, end= -1):
         # Create a figure and axes
         fig, ax = plt.subplots(figsize=(10, 10))
         X= self.X
-        for node in self.get_nodes():
+        for node in self.get_nodes()[start:end]:
             node.graph_function(ax, self.X)
             X+= self.interval_length
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
-        ax.set_title('Taylor Series Approximation')
+        ax.set_title(f'Taylor Series Approximation of {self.ticker_name}')
         ax.grid(True)
-        ax.legend()
+        if show_legend:
+            ax.legend()
         plt.show()
 
-    def Nodes_info(self, Node_num=0, all=False):
+    # Prints info about nodes in order. If nothing is changed, returns last node info.
+    def Nodes_info(self, Node_num=0, all=False, range=[0, -1]):
         nodes = self.get_nodes()
+        N= len(nodes)
         if all:
-            for node in nodes:
+            # Adjust the range to handle negative indices and out-of-bounds issues
+            start, end = range
+
+            if end > N:
+                end = N
+            if start < 0:
+                start = 0
+                
+            for node in nodes[start:end]:
                 node.print_node()
         else:
-            nodes[Node_num - 1].print_node()
+            if Node_num > N:
+                nodes[-1].print_node()  # Print last node if Node_num is 0 or out of range
+            else:
+                nodes[Node_num - 1].print_node()
 
+    #Sub class for each individual function
     class Spline_function():
+
+        #Simply applies knn to the input params on start
         def __init__(self, knn, input_params, node_num):
             self.node_num = node_num
             # Reshape input_params to ensure it's a 2D array with the correct shape
@@ -98,9 +116,13 @@ class Spline_functions():
             # Compute k-nearest neighbors
             self.distances, self.indices = knn.kneighbors(self.input_params)
 
-            # Initialize output_params
+            # Initialize stuff so no errors later
             self.output_params = None
+            self.range= None
+            self.fnth= None
+            self.Y= None
         
+        #Averages rows inputted and splices together the previous derivative values for the output params
         def calculate_output_params(self, rows):
             # Compute mean across columns (axis=0) to get average values for rest of values
             avg = np.mean(rows.iloc[:, self.N:], axis=0).values
@@ -108,8 +130,8 @@ class Spline_functions():
             # Concatenate input_params and avg horizontally
             self.output_params = np.hstack((self.input_params.flatten(), avg))
             
-
-        def taylor_function(self, X, dx, set_Y=False):
+        #Because we are already averaging the values initially, it effectively works as dividing by i!
+        def taylor_function(self, X, set_Y=False):
             Y = np.zeros_like(X)
 
             for i, v in enumerate(self.output_params):
@@ -118,9 +140,10 @@ class Spline_functions():
             if set_Y:
                 self.Y = Y
             
-            return Y, self.nth_derivative_endpoint(dx)
+            return Y, self.nth_derivative_endpoint()
         
-        def nth_derivative_endpoint(self, dx):
+        #Takes backwards derivative of the last few points
+        def nth_derivative_endpoint(self):
 
             f = pd.Series(self.Y[-self.N:])
             f_nth = []
@@ -133,18 +156,19 @@ class Spline_functions():
 
             return np.array(f_nth)
         
+        #Just graphs it
         def graph_function(self, ax, X):
             ax.plot(X, self.Y, label=f'Function {self.node_num}')
+            self.range= (X[0], X[-1])
         
-        
-        def get_output_params(self):
-            return self.output_params
-        
+        #Prints info for the sake of understanding
         def print_node(self):
             print(f'Node {self.node_num}')
+            print("Range:", self.range)
+            print("Output parameters:", self.output_params)
+            print("Nth derivatives at endpoint:", self.fnth)
             print("Distances to nearest neighbors:", self.distances)
             print("Indices of nearest neighbors:", self.indices)
-            print("Output parameters:", self.get_output_params())
-            print("Nth derivatives at endpoint:", self.fnth)
+
 
 

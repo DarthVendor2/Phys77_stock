@@ -4,16 +4,17 @@ import data_handler
 # Model Variables
 ticker_name = "SMP500"
 data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-Approximation_degree = 2
+Approximation_degree = 2 #Must be an int greater than 0. 0 is just the endpoint value (no derivatives) put into knn
 init_params = [1440.2223347981771,-0.3334441460503513,-0.31889987521700885]  # length must be one more than the approximation degree
-num_of_nodes = 365
-Interval_length = 7 #days
+num_of_nodes = 365 #Adjustable. 365 is just one years worth of functions 
+Interval_length = 10 #days. Better when smaller because taylor series is a closer approximation. 
+show_legend= False
 
 # Data Variables
-tickers = ["^GSPC", "^DJI", "^W5000"]
-Reset_data = False
-Full_taylor_degree = 3
-Moving_average = Interval_length*2 + 20 #Nums are adjustable, just 30 is pretty good too
+tickers = ["^GSPC", "^DJI", "^W5000"] #Tickers can be adjusted
+Reset_data = False #Just so you don't have to wait every time you want to create a plot
+Full_taylor_degree = 3 #The Taylor degree for each spliced function
+Moving_average = Interval_length*3 + 20 #Nums are adjustable; 30 is pretty good too
 
 #Print node info?
 Node_info= False
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     if type(num_of_nodes) is not int or num_of_nodes<1:
         raise "Number of nodes must be a positive integer"
 
-    if type(Approximation_degree) is not int or Approximation_degree<1:
+    if type(Approximation_degree) is not int or Approximation_degree<0:
         raise "Approximation degree must be a positive integer"
 
     if type(Full_taylor_degree) is not int or Full_taylor_degree<1:
@@ -55,14 +56,14 @@ if __name__ == "__main__":
     )
 
     # Create nodes
-    nodes = Functions.Create_node(init_params, size= num_of_nodes)
+    nodes, _ = Functions.Create_node(init_params, size= num_of_nodes)
     
     # Graph the functions
-    Functions.graph_functions()
+    Functions.graph_functions(show_legend=show_legend)
     
     # Print information about nodes
     if Node_info:
         Functions.Nodes_info(all=True)
 
-    print(f'Total length= {num_of_nodes*Interval_length/365} years')
+    print(f'Total length= {num_of_nodes*Interval_length/365:.3f} years')
     print('fin')
