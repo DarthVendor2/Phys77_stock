@@ -2,3 +2,6 @@
 __pycache__/data_handler.cpython-312.pyc
 __pycache__/spline_functions.cpython-312.pyc
 __pycache__/model.cpython-312.pyc
+Stock_data/Processed_data/Dow Jones Industrial Average_data.csv
+Stock_data/Processed_data/S&P 500_data.csv
+Stock_data/Processed_data/Wilshire 5000 Total Market Inde_data.csv
