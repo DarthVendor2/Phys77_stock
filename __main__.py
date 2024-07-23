@@ -3,16 +3,16 @@ import data_handler
 
 # Data Variables
 tickers = ["^GSPC", "^DJI", "^W5000"]
-Reset_data = False
-Full_taylor_degree = 10
+Reset_data = True
+Full_taylor_degree = 3
 
 # Model Variables
 ticker_name = "SMP500"
 data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-Approximation_degree = 4
-init_params = [1440.2223347981771,-0.3334441460503513,-0.31889987521700885,0.05700005425346717,0.011977403428826012]  # length must be one more than the approximation degree
-num_of_nodes = 365*3 #3yr
-Interval_length = 1 #days
+Approximation_degree = 2
+init_params = [1440.2223347981771,-0.3334441460503513,-0.31889987521700885]  # length must be one more than the approximation degree
+num_of_nodes = 365*3 #3yr when interval lenth = 1
+Interval_length = 5 #days
 
 #Print node info?
 Node_info= False
@@ -20,6 +20,9 @@ Node_info= False
 # Actual function
 if __name__ == "__main__":
     
+    if Full_taylor_degree <= Approximation_degree:
+        raise "Approximation degree must be less than the full taylor degree"
+
     if Reset_data:
         # Create an instance of data_handler
         temp = data_handler.Data_handler()

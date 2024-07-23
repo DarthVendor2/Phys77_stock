@@ -15,14 +15,11 @@ class Data_handler:
         # Get company name from ticker
         ticker = yf.Ticker(ticker_label)
         company_name = ticker.info['longName']
-
-        # Download data
         data = yf.download(ticker_label, start=start_date, end=end_date)
 
-        # Define file path for saving
-        file_path = os.path.join(self.raw_data_folder_path, f'{company_name}_data.csv')
 
         # Remove the existing file if it exists
+        file_path = os.path.join(self.raw_data_folder_path, f'{company_name}_data.csv')
         if os.path.exists(file_path):
             os.remove(file_path)
         

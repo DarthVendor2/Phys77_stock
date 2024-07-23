@@ -9,14 +9,15 @@ df = pd.read_csv(file)
 print(df.columns)
 
 # Selecting specific columns and manipulating dates
-df = df[["Date", "Open"]]
+df = df[["Date", "Open", "Close"]]
 df["Date"] = pd.to_datetime(df["Date"])
 df.set_index("Date", inplace=True)
 
 # Plotting "Open" prices over time
 plt.figure(figsize=(12, 6))
-plt.plot(df.index, df["Open"], marker='o', linestyle='-', color='b', label='Open Price')
-plt.title('Dow Jones Open Prices')
+plt.plot(df.index, df["Open"], marker='o', linestyle='-', color='b', label='Open Price', alpha= .5)
+plt.plot(df.index, df["Close"], marker='o', linestyle='-', color='m', label='Close Price', alpha= .5)
+plt.title('Dow Jones Prices')
 plt.xlabel('Date')
 plt.ylabel('Price')
 plt.legend()
