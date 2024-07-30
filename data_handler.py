@@ -7,10 +7,15 @@ import os
 class Data_handler:
     def __init__(self):
         # Sets folder paths
+        self.stock_folder= "Stock_data"
         self.raw_data_folder_path = "Stock_data/Raw_data"
         self.processed_data_folder_path = "Stock_data/Processed_data"
         os.makedirs(self.raw_data_folder_path, exist_ok=True)
         os.makedirs(self.processed_data_folder_path, exist_ok=True)
+
+    def Get_record(Raw_data= False, Processed_data= False):
+        pass
+        
 
     def add_ticker(self, ticker_label, start_date="2000-01-01", end_date="2023-12-31"):
         try:

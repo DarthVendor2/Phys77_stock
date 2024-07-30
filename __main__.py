@@ -2,35 +2,35 @@ import model
 import data_handler
 from matplotlib.pyplot import show as plt_show
 
-# Configuration
+# Add functionality later
 KNN_Weight = 1.0  # Must be a float greater than 0
+Add_noise= False
 
-# Data files
-Ticker_name = "SMP500"
-Processed_data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-Raw_data_file_path = "Stock_data/Raw_data/S&P 500_data.csv"
+# Data files; automate later
+Ticker_name = "algm"
+Processed_data_file_path = "Stock_data/Processed_data/Allegro MicroSystems, Inc._data.csv"
+Raw_data_file_path = "Stock_data/Raw_data/Allegro MicroSystems, Inc._data.csv"
 
 # Model Variables
-Approximation_degree = 2 # Must be an int greater than 0
-KNN_Neighbors = 5 # Must be an int greater than 0
-Num_of_nodes = 50  # Adjustable
-Interval_length = 3  # days
+Approximation_degree = 1 # Must be an int greater than 0
+KNN_Neighbors = 3 # Must be an int greater than 0
+Num_of_nodes = 365  # Adjustable
+Interval_length = 1  # days
 
 # Parameter Selection
 Use_rand_params = False
-Use_row_num = True
+Use_row_num = False
 Row_num = -1 #-1 = last point
-Use_init_params = False
-Init_params = [1186.4951231421494, -3.3609459381738884, 0.06388467383625561, -0.011963181095696688, 0.008435414420346649]
+Use_init_params = True
+Init_params = [25.16, -.25]
 
 # Data Variables
 Reset_data = False #Must be true inorder for following to take effect
-Tickers = ["^GSPC", "^DJI", "^W5000"]
-Full_taylor_degree = 4
-Moving_average = Interval_length*3
+Tickers = ["^GSPC", "^DJI", "^W5000", "algm"]
+Full_taylor_degree = 3
+Moving_average = 30
 start_date="2000-01-01" 
 end_date="2023-12-31"
-
 
 # Info Flags
 Node_info = False
@@ -64,6 +64,7 @@ def reset_data():
         temp.add_ticker(ticker, start_date=start_date, end_date=end_date)
     temp.process_tickers(Full_taylor_degree, rolling=Moving_average)
 
+#Main function
 if __name__ == "__main__":
     # Validate inputs
     validate_inputs()
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         if row is None:
             pass
         else:
-            ax = plotter.plot(ax, start=int(row), show_legend=Show_legend)
+            ax = plotter.plot(ax, start=int(row),end= row + Num_of_nodes * Interval_length, show_legend=Show_legend)
 
     # Print node information
     if Node_info:
