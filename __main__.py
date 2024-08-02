@@ -7,33 +7,34 @@ KNN_Weight = 1.0  # Must be a float greater than 0
 Add_noise= False
 
 # Data files; automate later
-Ticker_name = "algm"
-Processed_data_file_path = "Stock_data/Processed_data/Allegro MicroSystems, Inc._data.csv"
-Raw_data_file_path = "Stock_data/Raw_data/Allegro MicroSystems, Inc._data.csv"
+Ticker_name = "^smp500"
+Processed_data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
+Raw_data_file_path = "Stock_data/Raw_data/Dow Jones Industrial Average_data.csv"
 
 # Model Variables
 Approximation_degree = 1 # Must be an int greater than 0
-KNN_Neighbors = 3 # Must be an int greater than 0
-Num_of_nodes = 365  # Adjustable
-Interval_length = 1  # days
+Splicing_index=0 #Can be set
+KNN_Neighbors = 10 # Must be an int greater than 0
+Num_of_nodes = 20  # Adjustable
+Interval_length = 3  # days
 
 # Parameter Selection
-Use_rand_params = False
+Use_rand_params = True
 Use_row_num = False
 Row_num = -1 #-1 = last point
-Use_init_params = True
+Use_init_params = False
 Init_params = [25.16, -.25]
 
 # Data Variables
-Reset_data = False #Must be true inorder for following to take effect
-Tickers = ["^GSPC", "^DJI", "^W5000", "algm"]
-Full_taylor_degree = 3
+Reset_data = True #Must be true inorder for following to take effect
+Tickers = ["^GSPC", "^DJI", "^W5000"]
+Full_taylor_degree = 5
 Moving_average = 30
 start_date="2000-01-01" 
 end_date="2023-12-31"
 
 # Info Flags
-Node_info = False
+Node_info = True
 Show_legend = False
 Overlap_data = False
 
@@ -56,6 +57,9 @@ def validate_inputs():
 
     if not isinstance(Full_taylor_degree, int) or Full_taylor_degree < 1:
         raise ValueError("Full Taylor degree must be a positive integer.")
+
+    if not isinstance(Splicing_index, int) or Splicing_index < 0 or Splicing_index > Approximation_degree:
+        raise ValueError("Splicing index must be a positive integer less than the approximation degree.")
 
 def reset_data():
     """Reset and process data using data_handler."""

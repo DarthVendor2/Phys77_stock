@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, taylor_degree: int = 3):
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, taylor_degree: int = 3, splicing_index: int = 0):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -15,6 +15,7 @@ class Spline_functions:
         :param interval_length: Length of the interval for spline fitting.
         :param k: Number of nearest neighbors for k-NN.
         :param taylor_degree: Degree of the Taylor series approximation.
+        :param splicing_index: Index for splicing the Taylor series.
         """
         if not os.path.isfile(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
@@ -22,10 +23,11 @@ class Spline_functions:
         self.file = file
         self.df = pd.read_csv(file)
         self.ticker_name = ticker_name
-        self.X = np.linspace(0, interval_length, 200)
+        self.X = np.linspace(0, interval_length, 100)
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
+        self.splicing_index = splicing_index
         self.last_node_num = 0
         self.nodes = []
 
@@ -46,12 +48,12 @@ class Spline_functions:
 
         return rand_data[:self.taylor_degree], rand_row
 
-    def get_params_from_row_num(self, row: int) -> np.ndarray:
+    def get_params_from_row_num(self, row: int) -> tuple[np.ndarray, int]:
         """
         Get parameters from a specific row number.
 
         :param row: Row number to retrieve parameters from.
-        :return: Parameters from the specified row.
+        :return: Parameters from the specified row and the row number.
         """
         return self.df.iloc[row, :self.taylor_degree].values, row
 
@@ -69,6 +71,8 @@ class Spline_functions:
         if not isinstance(size, int) or size < 1:
             raise ValueError("Size must be a positive integer")
 
+        dx = self.X[1] - self.X[0]
+
         nodes_created = []
         for i in range(size):
             node = self.Spline_function(self.knn, params, self.last_node_num)
@@ -77,11 +81,12 @@ class Spline_functions:
             nodes_created.append(node)
 
             rows = self.df.iloc[node.indices.flatten()]
+
             if not isinstance(node.indices, np.ndarray) or node.indices.ndim != 2:
                 raise ValueError("Indices should be a 2D numpy array")
 
-            node.calculate_output_params(rows)
-            _, params = node.taylor_function(self.X, set_Y=True)
+            node.calculate_output_params(rows, self.splicing_index)
+            _, params = node.taylor_function(self.X, dx, set_Y=True)
 
         return nodes_created, params
 
@@ -155,20 +160,22 @@ class Spline_functions:
             self.fnth = None
             self.Y = None
 
-        def calculate_output_params(self, rows: pd.DataFrame):
+        def calculate_output_params(self, rows: pd.DataFrame, splicing_index: int):
             """
             Calculate output parameters for the spline function.
 
             :param rows: DataFrame containing the rows of nearest neighbors.
+            :param splicing_index: Index for splicing the Taylor series.
             """
-            avg = np.mean(rows.iloc[:, self.N:], axis=0).values
+            avg = np.mean(rows.iloc[:, splicing_index + 1:], axis=0).values
             self.output_params = np.hstack((self.input_params.flatten(), avg))
 
-        def taylor_function(self, X: np.ndarray, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
+        def taylor_function(self, X: np.ndarray, dx: float, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
             """
             Compute the Taylor series function.
 
             :param X: Input array for the function.
+            :param dx: Differential step size.
             :param set_Y: Whether to set Y values for the spline function.
             :return: Tuple containing function values and nth derivatives.
             """
@@ -177,18 +184,19 @@ class Spline_functions:
                 Y += (v * X**i) / math.factorial(i)
             if set_Y:
                 self.Y = Y
-            return Y, self.nth_derivative_endpoint()
+            return Y, self.nth_derivative_endpoint(dx)
 
-        def nth_derivative_endpoint(self) -> np.ndarray:
+        def nth_derivative_endpoint(self, dx: float) -> np.ndarray:
             """
             Compute the nth derivatives at the endpoint of Y.
 
+            :param dx: Differential step size.
             :return: Array of nth derivatives.
             """
             f = pd.Series(self.Y[-self.N:])
             f_nth = [f.iloc[-1]]
             for _ in range(self.N - 1):
-                f = f.diff()
+                f = f.diff() / dx
                 f_nth.append(f.iloc[-1])
             self.fnth = np.array(f_nth)
             return self.fnth
@@ -215,3 +223,13 @@ class Spline_functions:
             print("Nth derivatives at endpoint:", self.fnth)
             print("Distances to nearest neighbors:", self.distances)
             print("Indices of nearest neighbors:", self.indices)
+
+        def get_distances(self) -> np.ndarray:
+            """
+            Get distances to nearest neighbors.
+
+            :return: Distances to nearest neighbors.
+            """
+            return self.distances
+
+#Last was attempting to apply weights

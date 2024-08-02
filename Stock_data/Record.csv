@@ -1,0 +1,3 @@
+Ticker,Name,Type,File_path
+^DJI,Dow Jones Industrial Average,Raw,Stock_data/Raw_data/Raw_Dow Jones Industrial Average_data.csv
+^DJI,Dow Jones Industrial Average,Processed,Stock_data/Processed_data/Processed_Dow Jones Industrial Average_data.csv
