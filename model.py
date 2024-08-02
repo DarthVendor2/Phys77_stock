@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, taylor_degree: int = 3, splicing_index: int = 0):
+    def __init__(self, file: str, ticker_name: str, KNN_Weights, interval_length: int = 3, k: int = 5, taylor_degree: int = 3, splicing_index: int = 0):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -23,11 +23,12 @@ class Spline_functions:
         self.file = file
         self.df = pd.read_csv(file)
         self.ticker_name = ticker_name
-        self.X = np.linspace(0, interval_length, 100)
+        self.X = np.linspace(0, interval_length, 50)
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
         self.splicing_index = splicing_index
+        self.KNN_Weights = KNN_Weights.flatten()
         self.last_node_num = 0
         self.nodes = []
 
@@ -45,7 +46,6 @@ class Spline_functions:
         N = len(self.df)
         rand_row = np.random.randint(low=0, high=N)
         rand_data = self.df.iloc[rand_row, :].values
-
         return rand_data[:self.taylor_degree], rand_row
 
     def get_params_from_row_num(self, row: int) -> tuple[np.ndarray, int]:
@@ -55,6 +55,7 @@ class Spline_functions:
         :param row: Row number to retrieve parameters from.
         :return: Parameters from the specified row and the row number.
         """
+
         return self.df.iloc[row, :self.taylor_degree].values, row
 
     def Create_node(self, params: np.ndarray, size: int = 1) -> tuple[list, np.ndarray]:
@@ -72,7 +73,7 @@ class Spline_functions:
             raise ValueError("Size must be a positive integer")
 
         dx = self.X[1] - self.X[0]
-
+        div_KNN_Weights = self.KNN_Weights[:self.splicing_index + 1]
         nodes_created = []
         for i in range(size):
             node = self.Spline_function(self.knn, params, self.last_node_num)
@@ -85,8 +86,9 @@ class Spline_functions:
             if not isinstance(node.indices, np.ndarray) or node.indices.ndim != 2:
                 raise ValueError("Indices should be a 2D numpy array")
 
-            node.calculate_output_params(rows, self.splicing_index)
+            node.calculate_output_params(rows, self.splicing_index, self.KNN_Weights)
             _, params = node.taylor_function(self.X, dx, set_Y=True)
+            params = params / div_KNN_Weights
 
         return nodes_created, params
 
@@ -160,15 +162,16 @@ class Spline_functions:
             self.fnth = None
             self.Y = None
 
-        def calculate_output_params(self, rows: pd.DataFrame, splicing_index: int):
+        def calculate_output_params(self, rows: pd.DataFrame, splicing_index: int, KNN_Weights):
             """
             Calculate output parameters for the spline function.
 
             :param rows: DataFrame containing the rows of nearest neighbors.
             :param splicing_index: Index for splicing the Taylor series.
             """
-            avg = np.mean(rows.iloc[:, splicing_index + 1:], axis=0).values
-            self.output_params = np.hstack((self.input_params.flatten(), avg))
+            avg = np.mean(rows.iloc[:, self.N:], axis=0).values
+            
+            self.output_params = np.hstack((self.input_params.flatten(), avg))*KNN_Weights
 
         def taylor_function(self, X: np.ndarray, dx: float, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
             """
@@ -231,5 +234,3 @@ class Spline_functions:
             :return: Distances to nearest neighbors.
             """
             return self.distances
-
-#Last was attempting to apply weights

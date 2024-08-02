@@ -1,3 +1,4 @@
 Ticker,Name,Type,File_path
-^DJI,Dow Jones Industrial Average,Raw,Stock_data/Raw_data/Raw_Dow Jones Industrial Average_data.csv
+^GSPC,S&P 500,Processed,Stock_data/Processed_data/Processed_S&P 500_data.csv
 ^DJI,Dow Jones Industrial Average,Processed,Stock_data/Processed_data/Processed_Dow Jones Industrial Average_data.csv
+^W5000,Wilshire 5000 Total Market Inde,Processed,Stock_data/Processed_data/Processed_Wilshire 5000 Total Market Inde_data.csv

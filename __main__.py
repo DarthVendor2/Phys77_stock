@@ -1,22 +1,22 @@
 import model
-import data_handler
+import data_handler as dh
 from matplotlib.pyplot import show as plt_show
 
+
+Tickers = ["^GSPC", "^DJI", "^W5000"]
 # Add functionality later
-KNN_Weight = 1.0  # Must be a float greater than 0
 Add_noise= False
 
 # Data files; automate later
-Ticker_name = "^smp500"
-Processed_data_file_path = "Stock_data/Processed_data/S&P 500_data.csv"
-Raw_data_file_path = "Stock_data/Raw_data/Dow Jones Industrial Average_data.csv"
+Ticker= ["^DJI"]
+Raw_data_file_path, Processed_data_file_path = dh.get_file_path(Ticker[0])
 
 # Model Variables
-Approximation_degree = 1 # Must be an int greater than 0
-Splicing_index=0 #Can be set
+Approximation_degree = 2 # Must be an int greater than 0
+Splicing_index=1 #Can be set
 KNN_Neighbors = 10 # Must be an int greater than 0
-Num_of_nodes = 20  # Adjustable
-Interval_length = 3  # days
+Num_of_nodes = 10  # Adjustable
+Interval_length = 5  # days
 
 # Parameter Selection
 Use_rand_params = True
@@ -27,14 +27,13 @@ Init_params = [25.16, -.25]
 
 # Data Variables
 Reset_data = True #Must be true inorder for following to take effect
-Tickers = ["^GSPC", "^DJI", "^W5000"]
-Full_taylor_degree = 5
-Moving_average = 30
+Full_taylor_degree = 3
+Moving_average = 10
 start_date="2000-01-01" 
 end_date="2023-12-31"
 
 # Info Flags
-Node_info = True
+Node_info = False
 Show_legend = False
 Overlap_data = False
 
@@ -61,13 +60,6 @@ def validate_inputs():
     if not isinstance(Splicing_index, int) or Splicing_index < 0 or Splicing_index > Approximation_degree:
         raise ValueError("Splicing index must be a positive integer less than the approximation degree.")
 
-def reset_data():
-    """Reset and process data using data_handler."""
-    temp = data_handler.Data_handler()
-    for ticker in Tickers:
-        temp.add_ticker(ticker, start_date=start_date, end_date=end_date)
-    temp.process_tickers(Full_taylor_degree, rolling=Moving_average)
-
 #Main function
 if __name__ == "__main__":
     # Validate inputs
@@ -75,12 +67,20 @@ if __name__ == "__main__":
 
     # Data management
     if Reset_data:
-        reset_data()
+        dh.add_and_process_tickers(
+            Tickers, 
+            start_date= start_date, 
+            end_date= end_date, 
+            Full_taylor_degree= Full_taylor_degree,
+            rolling=Moving_average)
+
+    KNN_Weights= dh.get_weights(Ticker)
 
     # Initialize spline functions
     Functions = model.Spline_functions(
         Processed_data_file_path,
-        Ticker_name,
+        Ticker,
+        KNN_Weights,
         interval_length=Interval_length,
         k=KNN_Neighbors,
         taylor_degree=Approximation_degree
@@ -90,16 +90,14 @@ if __name__ == "__main__":
     if Use_rand_params:
         params, row = Functions.get_rand_params_from_data()
         _, _ = Functions.Create_node(params, size=Num_of_nodes)
-        print('Initial params were:', params)
     elif Use_row_num:
         params, row= Functions.get_params_from_row_num(Row_num)
-        print('Initial params were:', params)
         # Create nodes if necessary, or adjust according to needs
         _, _ = Functions.Create_node(params, size=Num_of_nodes)
     else:
         _, _ = Functions.Create_node(Init_params, size=Num_of_nodes)
+        params= Init_params
         row = None
-        print('Initial params were:', Init_params)
 
     # Graph the functions
     fig, ax = Functions.graph_functions(show_legend=Show_legend)
@@ -117,6 +115,7 @@ if __name__ == "__main__":
         Functions.Nodes_info(all=True)
 
     # Final output
+    print('Initial params were:', params)
     print(f'Total length = {Num_of_nodes * Interval_length / 365:.3f} years')
     print('fin')
 

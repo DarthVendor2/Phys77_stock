@@ -54,12 +54,14 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, rolling):
 
         # Calculate rolling derivatives
         df, KNN_Weights = rolling_derivatives(df, Full_taylor_degree, rolling)
+        KNN_Weights = np.array(KNN_Weights)
 
         # Save processed data
         df.to_csv(file_path, index=False)
 
         # Append to record
         append_to_record(ticker, company_name, "Processed", file_path)
+        append_weight(ticker, KNN_Weights)
 
         return KNN_Weights
 
@@ -124,28 +126,34 @@ def create_record():
 
 def append_to_record(Ticker, Name, File_type, File_path):
     """
-    Appends a new record to the existing record CSV file.
+    Appends a new record to the existing record CSV file. Replaces existing records if ticker already exists.
 
     :param Ticker: The ticker symbol of the stock.
     :param Name: The name of the company.
-    :param Type: The type of data (Raw or Processed).
+    :param File_type: The type of data (Raw or Processed).
     :param File_path: The file path where the data is saved.
     """
     file_path = "Stock_data/Record.csv"
-    # Read the existing record
+    
     try:
+        # Attempt to read the existing record file
         df = pd.read_csv(file_path)
     except FileNotFoundError:
+        # If the file does not exist, create a new DataFrame
         create_record()
         df = pd.read_csv(file_path)
     
+    # Check if the ticker already exists in the DataFrame
+    if Ticker in df['Ticker'].values:
+        # Replace the existing row with the new record
+        df.loc[df['Ticker'] == Ticker] = [Ticker, Name, File_type, File_path]
+    else:
+        # Append the new record as a new row
+        new_row = [Ticker, Name, File_type, File_path]
+        df.loc[len(df.index)] = new_row
     
-    # Append the new record
-    new_row= [Ticker, Name, File_type, File_path]
-    df.loc[len(df.index)] = new_row
+    # Save the updated DataFrame back to CSV
     df.to_csv(file_path, index=False)
-
-
 
 def Get_record(Raw_data=False, Processed_data=False):
     """
@@ -171,22 +179,81 @@ def Get_record(Raw_data=False, Processed_data=False):
     else:
         return df
 
+def get_file_path(ticker):
+    """
+    Retrieves the file paths for raw and processed data based on the ticker symbol.
+
+    :param ticker: The ticker symbol of the stock.
+    :return: Tuple containing file paths for raw and processed data.
+    """
+    file_path = "Stock_data/Record.csv"
+
+    try:
+        df = pd.read_csv(file_path)
+    except FileNotFoundError:
+        print(f"No record found at {file_path}")
+        return None
+
+    file_paths = df.loc[df['Ticker'] == ticker]
+    if file_paths.empty:
+        raise Exception("Ticker isn't recorded")
+    
+    Raw_data_file_path = file_paths[file_paths['Type'] == 'Raw']['File_path'].values
+    Processed_data_file_path = file_paths[file_paths['Type'] == 'Processed']['File_path'].values
+
+    # Ensure file_paths are strings or empty
+    Raw_data_file_path = Raw_data_file_path[0] if len(Raw_data_file_path) > 0 else None
+    Processed_data_file_path = Processed_data_file_path[0] if len(Processed_data_file_path) > 0 else None
+
+    return Raw_data_file_path, Processed_data_file_path
+
 def append_weight(ticker, weights):
     """
-    Appends KNN Weights to a CSV file.
+    Appends KNN Weights to a CSV file. If the ticker already exists, updates the existing column.
 
     :param ticker: The ticker symbol of the stock.
     :param weights: The KNN Weights to be appended.
     """
     file_path = "Stock_data/Weight_record.csv"
+    
+    try:
+        # Attempt to read the existing weights file
+        df = pd.read_csv(file_path)
+        
+        # Create a temporary DataFrame for the new weights
+        temp_df = pd.DataFrame({ticker: pd.Series(weights)})
+        
+        # Reindex both DataFrames to ensure they have the same length
+        max_length = max(len(df), len(temp_df))
+        df = df.reindex(range(max_length))
+        temp_df = temp_df.reindex(range(max_length))
+        
+        # Update or add the new column
+        df[ticker] = temp_df[ticker]
+    
+    except FileNotFoundError:
+        # If the file does not exist, create a new DataFrame
+        df = pd.DataFrame({ticker: pd.Series(weights)})
+    
+    # Save the DataFrame back to the CSV file
+    df.to_csv(file_path, index=False)
+
+    # Save the updated DataFrame back to CSV
+    df.to_csv(file_path, index=False)
+
+def get_weights(ticker):
+    """
+    Retrieves KNN Weights for the given ticker.
+
+    :param ticker: The ticker symbol of the stock.
+    :return: Numpy array of KNN Weights for the ticker.
+    """
+    file_path = "Stock_data/Weight_record.csv"    
     try:
         df = pd.read_csv(file_path)
+        return np.array(df[ticker])
     except FileNotFoundError:
-        df = pd.DataFrame()
-
-    # Append weights to the DataFrame
-    df[ticker] = pd.Series(weights)
-    df.to_csv(file_path, index=False)
+        raise Exception("Ticker weights don't exist")
 
 def plot(file_path, ax, start=0, end=-1, show_legend=False):
     """
@@ -210,15 +277,11 @@ def plot(file_path, ax, start=0, end=-1, show_legend=False):
         end = len(df)
 
     start = max(int(start), 0)
-    end = min(int(end), len(df))
+    end = min(int(end), len(df))  # Ensure end is within bounds
 
-    df = df.iloc[start:end]
-
-    print(f"Plotting data from index {start} to {end}")
-
-    N = len(df)
-    X = np.linspace(0, N-1, N)
-    ax.plot(X, df, marker='o', linestyle='-', color='b', label='Open Price', alpha=0.5)
-        
+    ax.plot(df.index[start:end], df[start:end], label='Open Prices')
     if show_legend:
         ax.legend()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Open Price')
+    ax.set_title(f'Open Prices from {start} to {end}')
