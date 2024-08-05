@@ -251,6 +251,7 @@ def get_weights(ticker):
     file_path = "Stock_data/Weight_record.csv"    
     try:
         df = pd.read_csv(file_path)
+        df.dropna(inplace=True)
         return np.array(df[ticker])
     except FileNotFoundError:
         raise Exception("Ticker weights don't exist")

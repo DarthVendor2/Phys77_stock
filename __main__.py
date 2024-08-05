@@ -13,8 +13,8 @@ Raw_data_file_path, Processed_data_file_path = dh.get_file_path(Ticker[0])
 
 # Model Variables
 Approximation_degree = 2 # Must be an int greater than 0
-Splicing_index=1 #Can be set
-KNN_Neighbors = 10 # Must be an int greater than 0
+Splicing_index=2 #Can be set
+KNN_Neighbors = 3 # Must be an int greater than 0
 Num_of_nodes = 10  # Adjustable
 Interval_length = 5  # days
 
@@ -27,13 +27,13 @@ Init_params = [25.16, -.25]
 
 # Data Variables
 Reset_data = True #Must be true inorder for following to take effect
-Full_taylor_degree = 3
+Full_taylor_degree = 5
 Moving_average = 10
 start_date="2000-01-01" 
 end_date="2023-12-31"
 
 # Info Flags
-Node_info = False
+Node_info = True
 Show_legend = False
 Overlap_data = False
 
