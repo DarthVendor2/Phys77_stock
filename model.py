@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, taylor_degree: int = 3):
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1.0, taylor_degree: int = 3, start_day: int = 6030):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -20,9 +20,12 @@ class Spline_functions:
             raise FileNotFoundError(f"The file {file} does not exist.")
         
         self.file = file
-        self.df = pd.read_csv(file)
+        self.start_day = start_day-1 #fix if day zero is place zero
+        self.df = pd.read_csv(file)[0: start_day]
         self.ticker_name = ticker_name
-        self.X = np.linspace(0, interval_length, 200)
+
+        self.X = np.arange(0, interval_length + resolution, resolution) #fix
+        
         self.interval_length = interval_length
         self.k = k
         self.taylor_degree = taylor_degree + 1
@@ -54,7 +57,7 @@ class Spline_functions:
         :return: Parameters from the specified row.
         """
         return self.df.iloc[row, :self.taylor_degree].values, row
-
+        
     def Create_node(self, params: np.ndarray, size: int = 1) -> tuple[list, np.ndarray]:
         """
         Create spline nodes with specified parameters.
@@ -81,7 +84,8 @@ class Spline_functions:
                 raise ValueError("Indices should be a 2D numpy array")
 
             node.calculate_output_params(rows)
-            _, params = node.taylor_function(self.X, set_Y=True)
+            __, params = node.taylor_function(self.X, set_Y=True) #fix add __
+            
 
         return nodes_created, params
 
@@ -93,7 +97,7 @@ class Spline_functions:
         """
         return np.array(self.nodes)
 
-    def graph_functions(self, show_legend: bool = False, start: int = 0, end: int = -1) -> tuple[plt.Figure, plt.Axes]:
+    def graph_functions(self, show_legend: bool = False, nodes_starting_index: int = 0, nodes_ending_index: int = -1) -> tuple[plt.Figure, plt.Axes]:
         """
         Plot all spline functions.
 
@@ -103,17 +107,30 @@ class Spline_functions:
         :return: Figure and axes of the plot.
         """
         fig, ax = plt.subplots(figsize=(10, 10))
-        for node in self.get_nodes()[start:end]:
-            node.graph_function(ax, self.X)
-            self.X += self.interval_length
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
+        #for node in self.get_nodes()[nodes_starting_index:nodes_ending_index]:
+        for num0, node in enumerate(self.get_nodes()):
+            #print(node)
+            X = self.X + self.interval_length*num0 + self.start_day
+            node.graph_function(ax, X)
+        ax.set_xlabel('Days since start of data')
+        ax.set_ylabel('Value per share ($)')
         ax.set_title(f'Taylor Series Approximation of {self.ticker_name}')
         ax.grid(True)
         if show_legend:
             ax.legend()
         return fig, ax
-
+        
+    def get_prediction_data(self, data_resolution: int = 1) -> tuple[list, list]: #fix how to make faster?
+        days = []
+        prediction = []
+        X_base = np.arange(0, self.interval_length + data_resolution, data_resolution)
+        for node_num, node in enumerate(self.get_nodes()):
+            node_domain = X_base + self.interval_length*node_num + self.start_day
+            prediction_part, _ = node.taylor_function(X_base)
+            prediction.append(prediction_part)
+            days.append(node_domain)
+        return days, prediction
+        
     def Nodes_info(self, Node_num: int = 0, all: bool = False, range: list[int] = [0, -1]):
         """
         Print information about nodes.
@@ -174,7 +191,7 @@ class Spline_functions:
             """
             Y = np.zeros_like(X)
             for i, v in enumerate(self.output_params):
-                Y += (v * X**i) / math.factorial(i)
+                Y = Y + (v * (X)**i) / math.factorial(i)
             if set_Y:
                 self.Y = Y
             return Y, self.nth_derivative_endpoint()

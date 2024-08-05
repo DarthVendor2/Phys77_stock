@@ -19,6 +19,7 @@ class Data_handler:
 
     def add_ticker(self, ticker_label, start_date="2000-01-01", end_date="2023-12-31"):
         try:
+            #add
             ticker = yf.Ticker(ticker_label)
             company_name = ticker.info.get('longName', ticker_label)
             data = yf.download(ticker_label, start=start_date, end=end_date)
@@ -32,19 +33,19 @@ class Data_handler:
         except Exception as e:
             raise f"Error adding ticker {ticker_label}: {e}"
 
-    def process_tickers(self, Degree_of_taylor, rolling=30):
+    def process_tickers(self, Degree_of_taylor, rolling=5):
 
         Degree_of_taylor += 1
-        files = os.listdir(self.raw_data_folder_path)
+        files = [file for file in os.listdir(self.raw_data_folder_path) if os.path.isfile(os.path.join(self.raw_data_folder_path, file))]
         for file in files:
-            file_path = os.path.join(self.raw_data_folder_path, file)
+            raw_file_path = os.path.join(self.raw_data_folder_path, file)
             processed_file_path = os.path.join(self.processed_data_folder_path, file)
             
             if os.path.exists(processed_file_path):
                 os.remove(processed_file_path)
             
             try:
-                df = pd.read_csv(file_path)[['Open']]
+                df = pd.read_csv(raw_file_path)[['Open']]
                 df.rename(columns={'Open': 'Derivative_0'}, inplace=True)
                 df['Derivative_0'] = df['Derivative_0'].rolling(rolling).mean()
 
@@ -60,10 +61,16 @@ class Data_handler:
             except Exception as e:
                 raise f"Error processing file {file}: {e}"
 
+
 class Plotter:
-    def __init__(self, file):
-        self.file = file
-        self.df = pd.read_csv(file)[["Open"]]
+    def __init__(self, file, processed_data = False):
+        if processed_data:        
+
+            self.file = file
+            self.df = pd.read_csv(file)[["Derivative_0"]] #has index and values
+        else:
+            self.file = file
+            self.df = pd.read_csv(file)[["Open"]] #has index and values
 
     def plot(self, ax, start=0, end=-1, show_legend=False):
         """
@@ -85,19 +92,22 @@ class Plotter:
             end = len(self.df)
 
         # Ensure start and end are within valid range
-        start = max(int(start), 0)
-        end = min(int(end), len(self.df))
+        #start = max(int(start), 0)
+        #end = min(int(end), len(self.df))
 
         # Extract subset of DataFrame
         df = self.df.iloc[start:end]
-
-        print(f"Plotting data from index {start} to {end}")
-
-        N = len(df)
-        X = np.linspace(0, N, N)
+        print(len(self.df))
+        X = range(len(self.df))[start:end]
         ax.plot(X, df, marker='o', linestyle='-', color='b', label='Open Price', alpha=0.5)
         
         if show_legend:
             ax.legend()
+
+
+        
+
+
+        
 
 
