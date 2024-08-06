@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1.0, taylor_degree: int = 3, Splicing_index= 3, KNN_Weight= None, start_day: int = 6030):
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1, taylor_degree: int = 2, start_day: int = -1):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -20,19 +20,20 @@ class Spline_functions:
             raise FileNotFoundError(f"The file {file} does not exist.")
         
         self.file = file
-        self.start_day = start_day-1 #fix if day zero is place zero
+
+        if start_day < 0:
+            days = range(len(pd.read_csv(file)))
+            start_day = days[start_day]
+        self.start_day = start_day-1
+        
         self.df = pd.read_csv(file)[0: start_day]
         self.ticker_name = ticker_name
 
-        self.X = np.arange(0, interval_length + resolution, resolution) #fix
+        self.X = np.arange(0, interval_length + resolution, resolution)
         
         self.interval_length = interval_length
         self.k = k
-
         self.taylor_degree = taylor_degree + 1
-        self.splicing_index = splicing_index
-        self.KNN_Weight = KNN_Weight
-
         self.last_node_num = 0
         self.nodes = []
 
@@ -88,7 +89,7 @@ class Spline_functions:
                 raise ValueError("Indices should be a 2D numpy array")
 
             node.calculate_output_params(rows)
-            __, params = node.taylor_function(self.X, set_Y=True) #fix add __
+            __, params = node.taylor_function(self.X, set_Y=True)
             
 
         return nodes_created, params
@@ -124,15 +125,16 @@ class Spline_functions:
             ax.legend()
         return fig, ax
         
-    def get_prediction_data(self, data_resolution: int = 1) -> tuple[list, list]: #fix how to make faster?
-        days = []
-        prediction = []
-        X_base = np.arange(0, self.interval_length + data_resolution, data_resolution)
+    def get_prediction_data(self, data_resolution: int = 1) -> tuple[list, list]: #how to make faster?
+        days = np.array([])
+        prediction = np.array([])
+        X_base = np.arange(0, self.interval_length + data_resolution - 1, data_resolution)
+        print("length of X", len(X_base))
         for node_num, node in enumerate(self.get_nodes()):
             node_domain = X_base + self.interval_length*node_num + self.start_day
             prediction_part, _ = node.taylor_function(X_base)
-            prediction.append(prediction_part)
-            days.append(node_domain)
+            prediction = np.concatenate((prediction,prediction_part))
+            days = np.concatenate((days,node_domain))
         return days, prediction
         
     def Nodes_info(self, Node_num: int = 0, all: bool = False, range: list[int] = [0, -1]):
