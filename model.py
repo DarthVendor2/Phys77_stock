@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1.0, taylor_degree: int = 3, start_day: int = 6030):
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1.0, taylor_degree: int = 3, Splicing_index= 3, KNN_Weight= None, start_day: int = 6030):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -28,7 +28,11 @@ class Spline_functions:
         
         self.interval_length = interval_length
         self.k = k
+
         self.taylor_degree = taylor_degree + 1
+        self.splicing_index = splicing_index
+        self.KNN_Weight = KNN_Weight
+
         self.last_node_num = 0
         self.nodes = []
 
