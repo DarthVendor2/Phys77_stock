@@ -62,7 +62,7 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rollin
         if weights is None:
             KNN_Weight = np.ones(Full_taylor_degree + 1)
         else:
-            KNN_Weight = np.array(df.iloc[0]) / np.array(weights)
+            KNN_Weight = np.abs(np.array(df.iloc[0]) / np.array(weights))
             df = df / KNN_Weight
 
         # Save processed data

@@ -4,10 +4,9 @@ from matplotlib.pyplot import show as plt_show
 import numpy as np
 
 # Data files; automate later
-Ticker= '^GSPC'
-
+Ticker= "^GSPC"
 # Model Variables
-Approximation_degree = 3 # Must be an int greater than 0
+Taylor_degree = 5 # Must be an int greater than 0
 KNN_Neighbors = 3 # Must be an int greater than 0
 Num_of_nodes = 365  # Adjustable
 Interval_length =2  # days
@@ -22,7 +21,6 @@ Init_params = [25.16, -.25]
 # Data Variables
 Reset_data = True #Must be true inorder for following to take effect
 
-Full_taylor_degree = 5
 Weights= [200,20,5,2.5,1,.5] #Length must be one greater than Full_taylor_degree or None
 
 Moving_average = None #Int or None
@@ -40,24 +38,19 @@ def validate_inputs():
     if sum([Use_rand_params, Use_row_num, Use_init_params]) != 1:
         raise ValueError("Set exactly one of Use_rand_params, Use_row_num, or Use_init_params to True.")
 
-    if Full_taylor_degree <= Approximation_degree:
-        raise ValueError("Approximation degree must be less than the full Taylor degree.")
-
     if not isinstance(Interval_length, int) or Interval_length < 1:
         raise ValueError("Interval length must be a positive integer.")
 
     if not isinstance(Num_of_nodes, int) or Num_of_nodes < 1:
         raise ValueError("Number of nodes must be a positive integer.")
 
-    if not isinstance(Approximation_degree, int) or Approximation_degree < 0:
-        raise ValueError("Approximation degree must be a non-negative integer.")
+    if not isinstance(Taylor_degree, int) or Taylor_degree < 0:
+        raise ValueError("Taylor degree must be a non-negative integer.")
 
-    if not isinstance(Full_taylor_degree, int) or Full_taylor_degree < 1:
-        raise ValueError("Full Taylor degree must be a positive integer.")
     if Weights is None:
         pass
-    elif not len(Weights) == Full_taylor_degree+1:
-        raise(f"Length of Weights must equal one more than the Full taylor degree. Length of weights is {len(Weights)}")
+    elif not len(Weights) == Taylor_degree+1:
+        raise(f"Length of Weights must equal one more than the taylor degree. Length of weights is {len(Weights)}")
 
 #Main function
 if __name__ == "__main__":
@@ -76,7 +69,7 @@ if __name__ == "__main__":
             Ticker, 
             start_date= start_date, 
             end_date= end_date, 
-            Full_taylor_degree= Full_taylor_degree,
+            Full_taylor_degree= Taylor_degree,
             weights= Weights,
             rolling=Moving_average)
 
@@ -90,7 +83,7 @@ if __name__ == "__main__":
         Ticker,
         interval_length=Interval_length,
         k=KNN_Neighbors,
-        taylor_degree=Approximation_degree,
+        taylor_degree=Taylor_degree,
         weights= Weights
     )
 
