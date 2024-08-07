@@ -1,6 +1,7 @@
 import model
 import data_handler as dh
 from matplotlib.pyplot import show as plt_show
+import numpy as np
 
 # Data files; automate later
 Ticker= '^W5000'
@@ -8,8 +9,8 @@ Ticker= '^W5000'
 # Model Variables
 Approximation_degree = 2 # Must be an int greater than 0
 KNN_Neighbors = 3 # Must be an int greater than 0
-Num_of_nodes = 10  # Adjustable
-Interval_length = 5  # days
+Num_of_nodes = 100  # Adjustable
+Interval_length = 2  # days
 
 # Parameter Selection
 Use_rand_params = True
@@ -22,10 +23,9 @@ Init_params = [25.16, -.25]
 Reset_data = True #Must be true inorder for following to take effect
 
 Full_taylor_degree = 5
-Weights= None
-#[10,2,1,1,1,1] #Length must be one greater than Full_taylor_degree
+Weights= [100,20,5,1,0.25,0.1] #Length must be one greater than Full_taylor_degree or None
 
-Moving_average = 10 #Int or None
+Moving_average = None #Int or None
 
 start_date="2000-01-01" 
 end_date="2023-12-31"
@@ -60,6 +60,7 @@ if __name__ == "__main__":
     # Validate inputs
     validate_inputs()
 
+    #Ensure ticker is in the system
     try:
         Raw_data_file_path, Processed_data_file_path = dh.get_file_path(Ticker)
     except:
@@ -77,16 +78,16 @@ if __name__ == "__main__":
 
         Raw_data_file_path, Processed_data_file_path = dh.get_file_path(Ticker)
 
-    KNN_Weights= dh.get_weights(Ticker)
+    Weights= dh.get_weights(Ticker)
 
     # Initialize spline functions
     Functions = model.Spline_functions(
         Processed_data_file_path,
         Ticker,
-        KNN_Weights,
         interval_length=Interval_length,
         k=KNN_Neighbors,
-        taylor_degree=Approximation_degree
+        taylor_degree=Approximation_degree,
+        weights= Weights
     )
 
     # Create nodes and print initial parameters
@@ -101,6 +102,8 @@ if __name__ == "__main__":
         _, _ = Functions.Create_node(Init_params, size=Num_of_nodes)
         params= Init_params
         row = None
+
+    params= np.array(params) * Weights[:len(params)]
 
     # Graph the functions
     fig, ax = Functions.graph_functions(show_legend=Show_legend)

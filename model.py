@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1, taylor_degree: int = 2, start_day: int = -1):
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1, taylor_degree: int = 2, weights= None, start_day: int = -1):
         """
         Initialize Spline_functions with data from a CSV file and set up k-NN model.
 
@@ -30,10 +30,12 @@ class Spline_functions:
         self.ticker_name = ticker_name
 
         self.X = np.arange(0, interval_length + resolution, resolution)
-        
         self.interval_length = interval_length
+
         self.k = k
         self.taylor_degree = taylor_degree + 1
+        self.weights= weights
+
         self.last_node_num = 0
         self.nodes = []
 
@@ -78,6 +80,12 @@ class Spline_functions:
             raise ValueError("Size must be a positive integer")
 
         nodes_created = []
+
+        N= len(params)
+        div_weights= self.weights[:N]
+        
+        dx = self.X[1] - self.X[0]
+
         for i in range(size):
             node = self.Spline_function(self.knn, params, self.last_node_num)
             self.last_node_num += 1
@@ -85,11 +93,10 @@ class Spline_functions:
             nodes_created.append(node)
 
             rows = self.df.iloc[node.indices.flatten()]
-            if not isinstance(node.indices, np.ndarray) or node.indices.ndim != 2:
-                raise ValueError("Indices should be a 2D numpy array")
 
-            node.calculate_output_params(rows)
-            __, params = node.taylor_function(self.X, set_Y=True)
+            node.calculate_output_params(rows, self.weights)
+            _, params = node.taylor_function(self.X, dx, set_Y=True)
+            params = params / div_weights
             
 
         return nodes_created, params
@@ -132,7 +139,7 @@ class Spline_functions:
         print("length of X", len(X_base))
         for node_num, node in enumerate(self.get_nodes()):
             node_domain = X_base + self.interval_length*node_num + self.start_day
-            prediction_part, _ = node.taylor_function(X_base)
+            prediction_part, _ = node.taylor_function(X_base,1)
             prediction = np.concatenate((prediction,prediction_part))
             days = np.concatenate((days,node_domain))
         return days, prediction
@@ -170,7 +177,7 @@ class Spline_functions:
             """
             self.node_num = node_num
             self.N = len(input_params)
-            self.input_params = np.array(input_params).reshape(1, -1)
+            self.input_params = np.array(input_params).reshape(1,-1)
             self.distances, self.indices = knn.kneighbors(self.input_params)
             self.output_params = None
             self.range = None
@@ -178,16 +185,19 @@ class Spline_functions:
             self.fnth = None
             self.Y = None
 
-        def calculate_output_params(self, rows: pd.DataFrame):
+        def calculate_output_params(self, rows: pd.DataFrame, KNN_Weights):
             """
             Calculate output parameters for the spline function.
 
             :param rows: DataFrame containing the rows of nearest neighbors.
+            :param splicing_index: Index for splicing the Taylor series.
             """
-            avg = np.mean(rows.iloc[:, self.N:], axis=0).values
-            self.output_params = np.hstack((self.input_params.flatten(), avg))
+            avg = np.mean(rows.iloc[:,1:], axis=0).values
+            first_param= [self.input_params.flatten()[0]]
+            
+            self.output_params = np.hstack((first_param, avg))*KNN_Weights
 
-        def taylor_function(self, X: np.ndarray, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
+        def taylor_function(self, X: np.ndarray, dx, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
             """
             Compute the Taylor series function.
 
@@ -200,9 +210,9 @@ class Spline_functions:
                 Y = Y + (v * (X)**i) / math.factorial(i)
             if set_Y:
                 self.Y = Y
-            return Y, self.nth_derivative_endpoint()
+            return Y, self.nth_derivative_endpoint(dx)
 
-        def nth_derivative_endpoint(self) -> np.ndarray:
+        def nth_derivative_endpoint(self, dx) -> np.ndarray:
             """
             Compute the nth derivatives at the endpoint of Y.
 
@@ -211,7 +221,7 @@ class Spline_functions:
             f = pd.Series(self.Y[-self.N:])
             f_nth = [f.iloc[-1]]
             for _ in range(self.N - 1):
-                f = f.diff()
+                f = f.diff()/dx
                 f_nth.append(f.iloc[-1])
             self.fnth = np.array(f_nth)
             return self.fnth
