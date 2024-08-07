@@ -33,14 +33,14 @@ def add_ticker(ticker_label, start_date, end_date):
     except Exception as e:
         raise Exception(f"Error adding ticker {ticker_label}: {e}")
 
-def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rolling):
+def process_ticker(ticker, company_name, df, process_taylor_degree, weights = None, rolling = None):
     """
     Processes a single ticker's data by calculating rolling derivatives and saving it to a CSV file.
 
     :param ticker: The ticker symbol of the stock.
     :param company_name: The name of the company.
     :param df: DataFrame containing the raw data.
-    :param Full_taylor_degree: The degree for calculating derivatives.
+    :param process_taylor_degree: The degree for calculating derivatives.
     :param rolling: The window size for rolling calculations.
     :return: KNN Weights calculated from the processed data.
     """
@@ -53,16 +53,16 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rollin
         df.rename(columns={'Open': 'Derivative_0'}, inplace=True)
 
         # Calculate rolling derivatives
-        df = rolling_derivatives(df, Full_taylor_degree, rolling)
+        df = rolling_derivatives(df, process_taylor_degree, rolling)
 
         # Drop NaN values
         df.dropna(inplace=True)
 
         # Calculate KNN Weights
         if weights is None:
-            KNN_Weight = np.ones(Full_taylor_degree + 1)
+            KNN_Weight = np.ones(process_taylor_degree + 1)
         else:
-            KNN_Weight = np.abs(np.array(df.iloc[0]) / np.array(weights))
+            KNN_Weight = np.array(df.iloc[0]) / np.array(weights)
             df = df / KNN_Weight
 
         # Save processed data
@@ -70,6 +70,7 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rollin
 
         # Append to record
         append_to_record(ticker, company_name, "Processed", file_path)
+
         Update_weight(ticker, KNN_Weight)
 
         return KNN_Weight
@@ -77,20 +78,20 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rollin
     except Exception as e:
         raise Exception(f"Error processing ticker {ticker}: {e}")
 
-def add_and_process_ticker(ticker_label, start_date="2000-01-01", end_date="2023-12-31", Full_taylor_degree=5, weights=None, rolling=None):
+def add_and_process_ticker(ticker_label, start_date="2000-01-01", end_date="2023-12-31", process_taylor_degree=5, weights=None, rolling=None):
     """
     Adds and processes multiple tickers, storing their KNN Weights.
 
     :param ticker_label: The ticker symbol of the stock.
     :param start_date: The start date for downloading historical data.
     :param end_date: The end date for downloading historical data.
-    :param Full_taylor_degree: The degree for calculating derivatives.
+    :param process_taylor_degree: The degree for calculating derivatives.
     :param rolling: The window size for rolling calculations.
     :return: Numpy array of KNN Weights for each ticker.
     """
     # Add and process each ticker
     df, company_name = add_ticker(ticker_label, start_date, end_date)
-    KNN_Weight = process_ticker(ticker_label, company_name, df, Full_taylor_degree, weights, rolling)
+    KNN_Weight = process_ticker(ticker_label, company_name, df, process_taylor_degree, weights, rolling)
 
     return np.array(KNN_Weight)
 
@@ -264,7 +265,7 @@ def plot(file_path, ax, start=0, end=-1, show_legend=False):
     :param end: Ending index for plotting (exclusive). If -1, plots until the end.
     :param show_legend: Whether to show the legend in the plot.
     """
-    df = pd.read_csv(file_path)['Open']
+    df = pd.read_csv(file_path)['Derivative_0']
 
     # Ensure start and end are scalar values
     if isinstance(start, (np.ndarray, list)):
@@ -272,15 +273,18 @@ def plot(file_path, ax, start=0, end=-1, show_legend=False):
     if isinstance(end, (np.ndarray, list)):
         end = end[0]
 
+    # Adjust end index if it's -1 to include all rows from start to the end of the DataFrame
     if end == -1 or end > len(df):
         end = len(df)
 
-    start = max(int(start), 0)
-    end = min(int(end), len(df))  # Ensure end is within bounds
+    # Ensure start and end are within valid range
+    #start = max(int(start), 0)
+    #end = min(int(end), len(self.df))
 
-    ax.plot(df.index[start:end], df[start:end], label='Open Prices')
+    # Extract subset of DataFrame
+    Y = df.iloc[start:end]
+    X = range(len(df))[start:end]
+    ax.plot(X, Y, marker='o', linestyle='-', color='b', label='Open Price', alpha=0.5)
+        
     if show_legend:
         ax.legend()
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Open Price')
-    ax.set_title(f'Open Prices from {start} to {end}')
