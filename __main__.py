@@ -6,10 +6,10 @@ import numpy as np
 # Data files; automate later
 Ticker= "^GSPC"
 # Model Variables
-Taylor_degree = 5 # Must be an int greater than 0
-KNN_Neighbors = 3 # Must be an int greater than 0
+Taylor_degree = 4 # Must be an int greater than 0
+KNN_Neighbors = 2 # Must be an int greater than 0
 Num_of_nodes = 365  # Adjustable
-Interval_length =2  # days
+Interval_length =1  # days
 
 # Parameter Selection
 Use_rand_params = True
@@ -21,7 +21,7 @@ Init_params = [25.16, -.25]
 # Data Variables
 Reset_data = True #Must be true inorder for following to take effect
 
-Weights= [200,20,5,2.5,1,.5] #Length must be one greater than Full_taylor_degree or None
+Weights= [7.5,10,2,1,.5] #Length must be one greater than Taylor_degree or None
 
 Moving_average = None #Int or None
 
