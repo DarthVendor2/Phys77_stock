@@ -7,7 +7,6 @@ Ticker= '^W5000'
 
 # Model Variables
 Approximation_degree = 2 # Must be an int greater than 0
-Splicing_index=1 #Can be set
 KNN_Neighbors = 3 # Must be an int greater than 0
 Num_of_nodes = 10  # Adjustable
 Interval_length = 5  # days
@@ -55,9 +54,6 @@ def validate_inputs():
 
     if not isinstance(Full_taylor_degree, int) or Full_taylor_degree < 1:
         raise ValueError("Full Taylor degree must be a positive integer.")
-
-    if not isinstance(Splicing_index, int) or Splicing_index < 0 or Splicing_index > Approximation_degree:
-        raise ValueError("Splicing index must be a positive integer less than the approximation degree.")
 
 #Main function
 if __name__ == "__main__":
