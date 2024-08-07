@@ -18,6 +18,8 @@ class Spline_functions:
         """
         if not os.path.isfile(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
+        if resolution <= taylor_degree:
+            resolution= taylor_degree + 5
         
         self.file = file
 
@@ -29,7 +31,7 @@ class Spline_functions:
         self.df = pd.read_csv(file)[0: start_day]
         self.ticker_name = ticker_name
 
-        self.X = np.arange(0, interval_length + resolution, resolution)
+        self.X = np.linspace(0, interval_length, resolution)
         self.interval_length = interval_length
 
         self.k = k
@@ -41,8 +43,10 @@ class Spline_functions:
 
         # Initialize k-NN
         X_data = self.df.iloc[:, :self.taylor_degree].values
+
         self.knn = NearestNeighbors(n_neighbors=self.k)
         self.knn.fit(X_data)
+
 
     def get_rand_params_from_data(self) -> tuple[np.ndarray, int]:
         """
@@ -136,7 +140,6 @@ class Spline_functions:
         days = np.array([])
         prediction = np.array([])
         X_base = np.arange(0, self.interval_length + data_resolution - 1, data_resolution)
-        print("length of X", len(X_base))
         for node_num, node in enumerate(self.get_nodes()):
             node_domain = X_base + self.interval_length*node_num + self.start_day
             prediction_part, _ = node.taylor_function(X_base,1)
@@ -248,3 +251,4 @@ class Spline_functions:
             print("Nth derivatives at endpoint:", self.fnth)
             print("Distances to nearest neighbors:", self.distances)
             print("Indices of nearest neighbors:", self.indices)
+        

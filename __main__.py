@@ -4,13 +4,13 @@ from matplotlib.pyplot import show as plt_show
 import numpy as np
 
 # Data files; automate later
-Ticker= '^W5000'
+Ticker= '^GSPC'
 
 # Model Variables
-Approximation_degree = 2 # Must be an int greater than 0
+Approximation_degree = 3 # Must be an int greater than 0
 KNN_Neighbors = 3 # Must be an int greater than 0
-Num_of_nodes = 100  # Adjustable
-Interval_length = 2  # days
+Num_of_nodes = 365  # Adjustable
+Interval_length =2  # days
 
 # Parameter Selection
 Use_rand_params = True
@@ -23,7 +23,7 @@ Init_params = [25.16, -.25]
 Reset_data = True #Must be true inorder for following to take effect
 
 Full_taylor_degree = 5
-Weights= [100,20,5,1,0.25,0.1] #Length must be one greater than Full_taylor_degree or None
+Weights= [200,20,5,2.5,1,.5] #Length must be one greater than Full_taylor_degree or None
 
 Moving_average = None #Int or None
 
@@ -31,7 +31,7 @@ start_date="2000-01-01"
 end_date="2023-12-31"
 
 # Info Flags
-Node_info = True
+Node_info = False
 Show_legend = False
 Overlap_data = False
 
@@ -54,6 +54,10 @@ def validate_inputs():
 
     if not isinstance(Full_taylor_degree, int) or Full_taylor_degree < 1:
         raise ValueError("Full Taylor degree must be a positive integer.")
+    if Weights is None:
+        pass
+    elif not len(Weights) == Full_taylor_degree+1:
+        raise(f"Length of Weights must equal one more than the Full taylor degree. Length of weights is {len(Weights)}")
 
 #Main function
 if __name__ == "__main__":

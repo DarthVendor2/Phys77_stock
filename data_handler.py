@@ -70,7 +70,7 @@ def process_ticker(ticker, company_name, df, Full_taylor_degree, weights, rollin
 
         # Append to record
         append_to_record(ticker, company_name, "Processed", file_path)
-        append_weight(ticker, KNN_Weight)
+        Update_weight(ticker, KNN_Weight)
 
         return KNN_Weight
 
@@ -218,7 +218,7 @@ def get_file_path(ticker):
 
     return Raw_data_file_path, Processed_data_file_path
 
-def append_weight(ticker, weights):
+def Update_weight(ticker, weights):
     """
     Appends KNN Weights to a CSV file. If the ticker already exists, updates the existing column.
 
@@ -227,27 +227,17 @@ def append_weight(ticker, weights):
     """
     file_path = "Stock_data/Weight_record.csv"
     
+
     try:
-        # Attempt to read the existing weights file
-        df = pd.read_csv(file_path)
+        df = pd.DataFrame({ticker: pd.Series(weights)})
+        df.to_csv(file_path, index=False)
         
-        # Create a temporary DataFrame for the new weights
-        temp_df = pd.DataFrame({ticker: pd.Series(weights)})
-        
-        # Reindex both DataFrames to ensure they have the same length
-        max_length = max(len(df), len(temp_df))
-        df = df.reindex(range(max_length))
-        temp_df = temp_df.reindex(range(max_length))
-        
-        # Update or add the new column
-        df[ticker] = temp_df[ticker]
-    
     except FileNotFoundError:
         # If the file does not exist, create a new DataFrame
         df = pd.DataFrame({ticker: pd.Series(weights)})
     
     # Save the DataFrame back to the CSV file
-    df.to_csv(file_path, index=False)
+    
 
 def get_weights(ticker):
     """
