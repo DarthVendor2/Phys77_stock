@@ -25,4 +25,4 @@ Taylor degree: determines the number of derivatives taken
 Weights: KNN weights (affect the entropy of training data)
 Moving average: Moving average applied to raw data + derivatives
 Start date: The start date of the imported data from Yahoo Finance
-End date: The end date of the imported data from Yahoo Finance
+End date: The end date of the imported data from Yahoo Finance 
