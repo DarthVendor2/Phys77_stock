@@ -33,7 +33,7 @@ end_date="2023-12-31"
 # Info Flags
 Node_info = False
 Show_legend = False
-Overlap_data = True
+Overlap_data = False
 
 def validate_inputs():
     """Validate input parameters."""

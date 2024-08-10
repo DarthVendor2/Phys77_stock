@@ -29,7 +29,7 @@ class Spline_functions:
         if interval_length/dx > taylor_degree:
             dx = interval_length / (2*taylor_degree)
         #Sets range of domain for each splin
-        self.X = np.arange(0, interval_length+dx, dx)
+        self.X = np.arange(0, interval_length + dx, dx)
         self.interval_length = interval_length
 
         self.last_node_num = 0
@@ -89,14 +89,11 @@ class Spline_functions:
         return np.array(self.nodes)
 
     def graph_functions(self, show_legend: bool = False, nodes_starting_index: int = 0, nodes_ending_index: int = -1):
-        #Graphs big function
         fig, ax = plt.subplots(figsize=(10, 10))
         #for node in self.get_nodes()[nodes_starting_index:nodes_ending_index]:
         for num0, node in enumerate(self.get_nodes()):
-            #sets domain of splines
             X = self.X + self.interval_length*num0 + self.start_day
             node.graph_function(ax, X)
-        #Graph labels and stuff
         ax.set_xlabel('Days since start of January 1st, 2000')
         ax.set_ylabel('Value per share ($)')
         ax.set_title(f'Spline Model of {self.ticker_name}')
