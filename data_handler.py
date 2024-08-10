@@ -5,14 +5,8 @@ import numpy as np
 import os
 
 def add_ticker(ticker_label, start_date, end_date):
-    """
-    Adds a new ticker to the record by downloading historical data and saving it to a CSV file.
-
-    :param ticker_label: The ticker symbol of the stock.
-    :param start_date: The start date for downloading historical data.
-    :param end_date: The end date for downloading historical data.
-    :return: DataFrame containing the downloaded data and the company name.
-    """
+    #add raw data csv
+    #updates record
     Raw_data_folder_path = "Stock_data/Raw_data"
 
     try:
@@ -34,16 +28,7 @@ def add_ticker(ticker_label, start_date, end_date):
         raise Exception(f"Error adding ticker {ticker_label}: {e}")
 
 def process_ticker(ticker, company_name, df, process_taylor_degree, weights = None, rolling = None):
-    """
-    Processes a single ticker's data by calculating rolling derivatives and saving it to a CSV file.
-
-    :param ticker: The ticker symbol of the stock.
-    :param company_name: The name of the company.
-    :param df: DataFrame containing the raw data.
-    :param process_taylor_degree: The degree for calculating derivatives.
-    :param rolling: The window size for rolling calculations.
-    :return: KNN Weights calculated from the processed data.
-    """
+    #processes data
     Processed_data_folder_path = "Stock_data/Processed_data"
     file_path = os.path.join(Processed_data_folder_path, f'Processed_{company_name}_data.csv')
 
@@ -55,14 +40,12 @@ def process_ticker(ticker, company_name, df, process_taylor_degree, weights = No
         # Calculate rolling derivatives
         df = rolling_derivatives(df, process_taylor_degree, rolling)
 
-        # Drop NaN values
-        df.dropna(inplace=True)
 
         # Calculate KNN Weights
         if weights is None:
             KNN_Weight = np.ones(process_taylor_degree + 1)
         else:
-            KNN_Weight = np.array(df.iloc[0]) / np.array(weights)
+            KNN_Weight = np.abs(np.array(df.iloc[0])) / np.array(weights)
             df = df / KNN_Weight
 
         # Save processed data
@@ -79,16 +62,6 @@ def process_ticker(ticker, company_name, df, process_taylor_degree, weights = No
         raise Exception(f"Error processing ticker {ticker}: {e}")
 
 def add_and_process_ticker(ticker_label, start_date="2000-01-01", end_date="2023-12-31", process_taylor_degree=5, weights=None, rolling=None):
-    """
-    Adds and processes multiple tickers, storing their KNN Weights.
-
-    :param ticker_label: The ticker symbol of the stock.
-    :param start_date: The start date for downloading historical data.
-    :param end_date: The end date for downloading historical data.
-    :param process_taylor_degree: The degree for calculating derivatives.
-    :param rolling: The window size for rolling calculations.
-    :return: Numpy array of KNN Weights for each ticker.
-    """
     # Add and process each ticker
     df, company_name = add_ticker(ticker_label, start_date, end_date)
     KNN_Weight = process_ticker(ticker_label, company_name, df, process_taylor_degree, weights, rolling)
@@ -96,48 +69,33 @@ def add_and_process_ticker(ticker_label, start_date="2000-01-01", end_date="2023
     return np.array(KNN_Weight)
 
 def rolling_derivatives(df, N, rolling):
-    """
-    Calculates rolling derivatives of the DataFrame.
-
-    :param df: DataFrame containing the data.
-    :param N: The degree for calculating derivatives.
-    :param rolling: The window size for rolling calculations.
-    :return: DataFrame with rolling derivatives and KNN Weights.
-    """
     # Calculate rolling mean for the initial data
-    if rolling is not None:
-        df['Derivative_0'] = df['Derivative_0'].rolling(rolling).mean()
-
     # Calculate derivatives iteratively
+    new_df = df.copy(deep=True)[-2*N:]
+    # Backwards Derivative
+    for i in range(N):
+        new_df[f'Derivative_{i + 1}'] = new_df[f'Derivative_{i}'].diff()
+    # Forwards Derivative
     for i in range(N):
         df[f'Derivative_{i + 1}'] = -df[f'Derivative_{i}'].diff(-1)
+        # Drop NaN values
+    df = pd.concat((df,new_df))
 
-    # Apply rolling mean to derivatives
-    if rolling is None:
-        pass
-    else:
-        for col in df.columns[1:]:
-            df[col] = df[col].rolling(rolling).mean()
-
+    if rolling is not None:
+        for col in df.columns:
+            df[col] = df[col].rolling(window=rolling, min_periods=1).mean() 
+   
+    df.dropna(inplace=True)
     return df
 
 def create_record():
-    """
-    Creates a new CSV file to record ticker information.
-    """
+    # Create a record for all tickers
     file_path = "Stock_data/Record.csv"
     df = pd.DataFrame(columns=["Ticker", "Name", "Type", "File_path"])
     df.to_csv(file_path, index=False)
 
 def append_to_record(Ticker, Name, File_type, File_path):
-    """
-    Appends a new record to the existing record CSV file. Replaces existing records if ticker already exists.
-
-    :param Ticker: The ticker symbol of the stock.
-    :param Name: The name of the company.
-    :param File_type: The type of data (Raw or Processed).
-    :param File_path: The file path where the data is saved.
-    """
+    # Append item to record
     file_path = "Stock_data/Record.csv"
     
     try:
@@ -168,13 +126,7 @@ def append_to_record(Ticker, Name, File_type, File_path):
 
 
 def Get_record(Raw_data=False, Processed_data=False):
-    """
-    Retrieves records from the CSV file based on the specified data type.
-
-    :param Raw_data: Whether to retrieve raw data records.
-    :param Processed_data: Whether to retrieve processed data records.
-    :return: DataFrame containing the requested records.
-    """
+    # Get the record data
     file_path = "Stock_data/Record.csv"
     try:
         df = pd.read_csv(file_path)
@@ -192,12 +144,7 @@ def Get_record(Raw_data=False, Processed_data=False):
         return df
 
 def get_file_path(ticker):
-    """
-    Retrieves the file paths for raw and processed data based on the ticker symbol.
-
-    :param ticker: The ticker symbol of the stock.
-    :return: Tuple containing file paths for raw and processed data.
-    """
+    #retrieves file path
     file_path = "Stock_data/Record.csv"
 
     try:
@@ -220,12 +167,7 @@ def get_file_path(ticker):
     return Raw_data_file_path, Processed_data_file_path
 
 def Update_weight(ticker, weights):
-    """
-    Appends KNN Weights to a CSV file. If the ticker already exists, updates the existing column.
-
-    :param ticker: The ticker symbol of the stock.
-    :param weights: The KNN Weights to be appended.
-    """
+    #Replaces weights
     file_path = "Stock_data/Weight_record.csv"
     
 
@@ -237,16 +179,9 @@ def Update_weight(ticker, weights):
         # If the file does not exist, create a new DataFrame
         df = pd.DataFrame({ticker: pd.Series(weights)})
     
-    # Save the DataFrame back to the CSV file
-    
 
 def get_weights(ticker):
-    """
-    Retrieves KNN Weights for the given ticker.
-
-    :param ticker: The ticker symbol of the stock.
-    :return: Numpy array of KNN Weights for the ticker.
-    """
+    #retrieves weights
     file_path = "Stock_data/Weight_record.csv"    
     try:
         df = pd.read_csv(file_path)
@@ -255,36 +190,31 @@ def get_weights(ticker):
     except FileNotFoundError:
         raise Exception("Ticker weights don't exist")
 
-def plot(file_path, ax, start=0, end=-1, show_legend=False):
-    """
-    Plot a subset of the 'Open' data from the DataFrame.
-
-    :param file_path: Path to the CSV file.
-    :param ax: Matplotlib axes to plot on.
-    :param start: Starting index for plotting (inclusive).
-    :param end: Ending index for plotting (exclusive). If -1, plots until the end.
-    :param show_legend: Whether to show the legend in the plot.
-    """
-    df = pd.read_csv(file_path)['Derivative_0']
-
-    # Ensure start and end are scalar values
-    if isinstance(start, (np.ndarray, list)):
-        start = start[0]
-    if isinstance(end, (np.ndarray, list)):
-        end = end[0]
-
-    # Adjust end index if it's -1 to include all rows from start to the end of the DataFrame
-    if end == -1 or end > len(df):
-        end = len(df)
-
-    # Ensure start and end are within valid range
-    #start = max(int(start), 0)
-    #end = min(int(end), len(self.df))
-
+def plot(file_path, ax, weights = None, start=0, end=-1, raw = False, show_legend=False):
+    # Create DataFrame
+    if raw:
+        #retrieves raw data
+        df = pd.read_csv(file_path)['Open']
+        color = 'b'
+        label = "Open Price Raw"
+    else:
+        #retrieves processed data
+        df = pd.read_csv(file_path)['Derivative_0']
+        if weights is not None:
+            df = df*weights[0]
+        color = 'g'
+        label = "Open Price Processed"
+    
     # Extract subset of DataFrame
-    Y = df.iloc[start:end]
-    X = range(len(df))[start:end]
-    ax.plot(X, Y, marker='o', linestyle='-', color='b', label='Open Price', alpha=0.5)
+    if end < 1:
+        X = np.arange(start,end)
+        Y = df.iloc[start:end]
+    else:
+        X = np.arange(start,end+1)
+        Y = df.iloc[start:end+1]
+    
+    ax.plot(X, Y, marker='o', linestyle='-', color=color, label=label, alpha=0.5)
         
     if show_legend:
         ax.legend()
+

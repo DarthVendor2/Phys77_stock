@@ -6,37 +6,31 @@ import matplotlib.pyplot as plt
 import math
 
 class Spline_functions:
-    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, resolution: float = 1, taylor_degree: int = 2, weights= None, start_day: int = -1):
-        """
-        Initialize Spline_functions with data from a CSV file and set up k-NN model.
-
-        :param file: Path to the CSV file containing data.
-        :param ticker_name: Name of the ticker for labeling.
-        :param interval_length: Length of the interval for spline fitting.
-        :param k: Number of nearest neighbors for k-NN.
-        :param taylor_degree: Degree of the Taylor series approximation.
-        """
+    def __init__(self, file: str, ticker_name: str, interval_length: int = 3, k: int = 5, dx: float = 0.1, taylor_degree: int = 2, weights= None, start_day: int = -1):
         if not os.path.isfile(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
-        if resolution <= taylor_degree:
-            resolution= taylor_degree + 5
-        
+        #Processed file path
         self.file = file
 
+        self.k = k
+        #Taylor degree of splines
+        self.taylor_degree = taylor_degree + 1
+        #transform form from processed to func
+        self.weights= weights
+
         if start_day < 0:
-            days = range(len(pd.read_csv(file)))
+            days = np.array(pd.read_csv(file).index)
             start_day = days[start_day]
-        self.start_day = start_day-1
-        
-        self.df = pd.read_csv(file)[0: start_day]
+        self.start_day = start_day
+        #Gets data
+        self.df = pd.read_csv(file)[0: start_day+1]
         self.ticker_name = ticker_name
 
-        self.X = np.linspace(0, interval_length, resolution)
+        if interval_length/dx > taylor_degree:
+            dx = interval_length / (2*taylor_degree)
+        #Sets range of domain for each splin
+        self.X = np.arange(0, interval_length+dx, dx)
         self.interval_length = interval_length
-
-        self.k = k
-        self.taylor_degree = taylor_degree + 1
-        self.weights= weights
 
         self.last_node_num = 0
         self.nodes = []
@@ -48,35 +42,22 @@ class Spline_functions:
         self.knn.fit(X_data)
 
 
-    def get_rand_params_from_data(self) -> tuple[np.ndarray, int]:
-        """
-        Get random parameters from the DataFrame for creating a node.
-
-        :return: Tuple containing parameters and row number.
-        """
+    def get_rand_params_from_data(self):
+        #Return random data row
         N = len(self.df)
         rand_row = np.random.randint(low=0, high=N)
         rand_data = self.df.iloc[rand_row, :].values
 
         return rand_data[:self.taylor_degree], rand_row
 
-    def get_params_from_row_num(self, row: int) -> np.ndarray:
-        """
-        Get parameters from a specific row number.
-
-        :param row: Row number to retrieve parameters from.
-        :return: Parameters from the specified row.
-        """
+    def get_params_from_row_num(self, row: int):
+        #Return data row
         return self.df.iloc[row, :self.taylor_degree].values, row
         
-    def Create_node(self, params: np.ndarray, size: int = 1) -> tuple[list, np.ndarray]:
-        """
-        Create spline nodes with specified parameters.
-
-        :param params: Parameters for the node.
-        :param size: Number of nodes to create.
-        :return: List of created nodes and final parameters.
-        """
+    def Create_node(self, params, size: int = 1):
+        #Used to create splines
+        #Size is num of nodes
+        #Params are data point
         if len(params) != self.taylor_degree:
             raise ValueError(f"Number of parameters must be {self.taylor_degree}")
 
@@ -102,59 +83,42 @@ class Spline_functions:
             _, params = node.taylor_function(self.X, dx, set_Y=True)
             params = params / div_weights
             
-
         return nodes_created, params
 
-    def get_nodes(self) -> np.ndarray:
-        """
-        Return an array of all the nodes.
-
-        :return: Array of nodes.
-        """
+    def get_nodes(self):
         return np.array(self.nodes)
 
-    def graph_functions(self, show_legend: bool = False, nodes_starting_index: int = 0, nodes_ending_index: int = -1) -> tuple[plt.Figure, plt.Axes]:
-        """
-        Plot all spline functions.
-
-        :param show_legend: Whether to show the legend in the plot.
-        :param start: Starting index for plotting.
-        :param end: Ending index for plotting.
-        :return: Figure and axes of the plot.
-        """
+    def graph_functions(self, show_legend: bool = False, nodes_starting_index: int = 0, nodes_ending_index: int = -1):
+        #Graphs big function
         fig, ax = plt.subplots(figsize=(10, 10))
         #for node in self.get_nodes()[nodes_starting_index:nodes_ending_index]:
         for num0, node in enumerate(self.get_nodes()):
-            #print(node)
+            #sets domain of splines
             X = self.X + self.interval_length*num0 + self.start_day
             node.graph_function(ax, X)
-        ax.set_xlabel('Days since start of data')
+        #Graph labels and stuff
+        ax.set_xlabel('Days since start of January 1st, 2000')
         ax.set_ylabel('Value per share ($)')
-        ax.set_title(f'Taylor Series Approximation of {self.ticker_name}')
+        ax.set_title(f'Spline Model of {self.ticker_name}')
         ax.grid(True)
         if show_legend:
             ax.legend()
         return fig, ax
         
-    def get_prediction_data(self, data_resolution: int = 1) -> tuple[list, list]: #how to make faster?
+    def get_prediction_data(self, data_resolution: int = 1): #how to make faster?
+        #returns array of predictions
         days = np.array([])
         prediction = np.array([])
-        X_base = np.arange(0, self.interval_length + data_resolution - 1, data_resolution)
+        X_base = np.arange(0, self.interval_length, data_resolution)
         for node_num, node in enumerate(self.get_nodes()):
-            node_domain = X_base + self.interval_length*node_num + self.start_day
-            prediction_part, _ = node.taylor_function(X_base,1)
+            prediction_part, _ = node.taylor_function(X_base,data_resolution)
             prediction = np.concatenate((prediction,prediction_part))
+            node_domain = X_base + self.interval_length*node_num + self.start_day
             days = np.concatenate((days,node_domain))
         return days, prediction
         
     def Nodes_info(self, Node_num: int = 0, all: bool = False, range: list[int] = [0, -1]):
-        """
-        Print information about nodes.
-
-        :param Node_num: Node number to display information for.
-        :param all: Whether to print information for all nodes.
-        :param range: Range of nodes to print information for.
-        """
+    #returns info about nodes
         nodes = self.get_nodes()
         N = len(nodes)
         if all:
@@ -170,14 +134,8 @@ class Spline_functions:
                 nodes[Node_num - 1].print_node()
 
     class Spline_function:
-        def __init__(self, knn: NearestNeighbors, input_params: np.ndarray, node_num: int):
-            """
-            Initialize a spline function node.
-
-            :param knn: k-NN model instance.
-            :param input_params: Input parameters for the spline function.
-            :param node_num: Node number.
-            """
+        def __init__(self, knn: NearestNeighbors, input_params, node_num: int):
+            #The actual splines in the big function
             self.node_num = node_num
             self.N = len(input_params)
             self.input_params = np.array(input_params).reshape(1,-1)
@@ -189,25 +147,16 @@ class Spline_functions:
             self.Y = None
 
         def calculate_output_params(self, rows: pd.DataFrame, KNN_Weights):
-            """
-            Calculate output parameters for the spline function.
-
-            :param rows: DataFrame containing the rows of nearest neighbors.
-            :param splicing_index: Index for splicing the Taylor series.
-            """
+            #calculate output parameters
+            #averages outputs of KNN
+            #Splices them together with first param
             avg = np.mean(rows.iloc[:,1:], axis=0).values
             first_param= [self.input_params.flatten()[0]]
             
             self.output_params = np.hstack((first_param, avg))*KNN_Weights
 
-        def taylor_function(self, X: np.ndarray, dx, set_Y: bool = False) -> tuple[np.ndarray, np.ndarray]:
-            """
-            Compute the Taylor series function.
-
-            :param X: Input array for the function.
-            :param set_Y: Whether to set Y values for the spline function.
-            :return: Tuple containing function values and nth derivatives.
-            """
+        def taylor_function(self, X, dx, set_Y: bool = False):
+            #returns Taylor series function
             Y = np.zeros_like(X)
             for i, v in enumerate(self.output_params):
                 Y = Y + (v * (X)**i) / math.factorial(i)
@@ -215,12 +164,8 @@ class Spline_functions:
                 self.Y = Y
             return Y, self.nth_derivative_endpoint(dx)
 
-        def nth_derivative_endpoint(self, dx) -> np.ndarray:
-            """
-            Compute the nth derivatives at the endpoint of Y.
-
-            :return: Array of nth derivatives.
-            """
+        def nth_derivative_endpoint(self, dx):
+            #Backwards derivative
             f = pd.Series(self.Y[-self.N:])
             f_nth = [f.iloc[-1]]
             for _ in range(self.N - 1):
@@ -229,21 +174,18 @@ class Spline_functions:
             self.fnth = np.array(f_nth)
             return self.fnth
 
-        def graph_function(self, ax: plt.Axes, X: np.ndarray):
-            """
-            Plot the spline function.
-
-            :param ax: Matplotlib axes to plot on.
-            :param X: X values for the plot.
-            """
-            ax.plot(X, self.Y, label=f'Function {self.node_num}')
+        def graph_function(self, ax, X):
+            #plots function 
+            if self.node_num == 0:
+                label = 'Taylor Function 1...'
+            else:
+                label = None
+            ax.plot(X, self.Y, label=label)
             self.domain = (X[0], X[-1])
             self.range = (self.Y[0], self.Y[-1])
 
         def print_node(self):
-            """
-            Print information about the spline node.
-            """
+            #General infor for debugging
             print(f'Node {self.node_num}')
             print("Domain:", self.domain)
             print("Range:", self.range)
@@ -251,4 +193,5 @@ class Spline_functions:
             print("Nth derivatives at endpoint:", self.fnth)
             print("Distances to nearest neighbors:", self.distances)
             print("Indices of nearest neighbors:", self.indices)
+        
         
