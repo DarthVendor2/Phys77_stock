@@ -76,7 +76,7 @@ if __name__ == "__main__":
             Ticker, 
             start_date= start_date, 
             end_date= end_date, 
-            Full_taylor_degree= Full_taylor_degree,
+            process_taylor_degree= Full_taylor_degree,
             weights= Weights,
             rolling=Moving_average)
 
