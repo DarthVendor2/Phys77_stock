@@ -194,7 +194,7 @@ def plot(file_path, ax, weights = None, start=0, end=-1, raw = False, show_legen
     # Create DataFrame
     if raw:
         #retrieves raw data
-        df = pd.read_csv(file_path)['Open']
+        df = pd.read_csv(file_path)["Open"]
         color = 'b'
         label = "Open Price Raw"
     else:

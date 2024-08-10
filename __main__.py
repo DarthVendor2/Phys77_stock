@@ -9,7 +9,7 @@ Ticker= '^GSPC'
 # Model Variables
 Approximation_degree = 3 # Must be an int greater than 0
 KNN_Neighbors = 3 # Must be an int greater than 0
-Num_of_nodes = 365  # Adjustable
+Num_of_nodes = 20  # Adjustable
 Interval_length =2  # days
 
 # Parameter Selection
@@ -33,7 +33,7 @@ end_date="2023-12-31"
 # Info Flags
 Node_info = False
 Show_legend = False
-Overlap_data = False
+Overlap_data = True
 
 def validate_inputs():
     """Validate input parameters."""
@@ -113,12 +113,9 @@ if __name__ == "__main__":
     fig, ax = Functions.graph_functions(show_legend=Show_legend)
 
     if Overlap_data and not Use_init_params:
-        plotter = data_handler.Plotter(Raw_data_file_path)
         # Ensure row is an integer or handle None case in the plot method
-        if row is None:
-            pass
-        else:
-            ax = plotter.plot(ax, start=int(row),end= row + Num_of_nodes * Interval_length, show_legend=Show_legend)
+        if row is not None:
+            dh.plot(Raw_data_file_path, ax, raw=True, start=int(row),end= row + Num_of_nodes * Interval_length, show_legend=Show_legend)
 
     # Print node information
     if Node_info:
